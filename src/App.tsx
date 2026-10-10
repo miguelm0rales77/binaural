@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AudioController, type StateInfo } from './audio/AudioController'
 import { bandFor } from './bands'
 import type { EngineParams, NoiseType, Preset, Program } from './dsp/types'
-import { MASTER_CEILING, RANGES, sanitizeParams } from './dsp/params'
+import { MASTER_CEILING, NATURE_TYPES, RANGES, isNature, sanitizeParams } from './dsp/params'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
@@ -286,22 +286,38 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       />
 
       <div className="field">
-        <label htmlFor="noise-type">Ruido de fondo</label>
+        <label htmlFor="noise-type">Fondo</label>
         <select
           id="noise-type"
           value={params.noiseType}
           onChange={(e) => update({ noiseType: e.target.value as NoiseType })}
         >
-          {(Object.keys(NOISE_LABELS) as NoiseType[]).map((t) => (
-            <option key={t} value={t}>
-              {NOISE_LABELS[t]}
-            </option>
-          ))}
+          <option value="none">{NOISE_LABELS.none}</option>
+          <optgroup label="Ruidos">
+            {(['white', 'pink', 'brown'] as const).map((t) => (
+              <option key={t} value={t}>
+                {NOISE_LABELS[t]}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Sonidos de la naturaleza">
+            {NATURE_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {NOISE_LABELS[t]}
+              </option>
+            ))}
+          </optgroup>
         </select>
+        {isNature(params.noiseType) && (
+          <small>
+            Sonido generado por síntesis (no es una grabación) y siempre suave, sin picos repentinos.
+            {params.noiseType === 'storm' && ' Incluye truenos lejanos y espaciados.'}
+          </small>
+        )}
       </div>
       <Slider
-        label="Volumen del ruido"
-        ariaLabel="Volumen del ruido"
+        label="Volumen del fondo"
+        ariaLabel="Volumen del fondo"
         min={0}
         max={1}
         value={params.noiseGain}

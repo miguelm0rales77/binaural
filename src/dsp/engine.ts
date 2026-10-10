@@ -1,8 +1,9 @@
 import { IsoEnvelope } from './envelope'
 import { loudnessCompGain } from './loudness'
+import { ForestGen, RainGen, RiverGen, StormGen, WindGen, type NatureGen } from './nature'
 import { NoiseGenerator } from './noise'
 import { Oscillator, TWO_PI } from './oscillator'
-import { MASTER_CEILING, sanitizeParams } from './params'
+import { MASTER_CEILING, NATURE_TYPES, sanitizeParams } from './params'
 import { evalProgram, type ProgramValue } from './program'
 import { Smoother } from './smoothing'
 import { DEFAULT_PARAMS, type EngineParams, type Program } from './types'
@@ -72,6 +73,9 @@ export class DspEngine {
   private readonly wWhite: Smoother
   private readonly wPink: Smoother
   private readonly wBrown: Smoother
+  /** Pesos y generadores de los sonidos de la naturaleza, en el orden de NATURE_TYPES. */
+  private readonly wNature: Smoother[]
+  private readonly nature: NatureGen[]
 
   private readonly oscA = new Oscillator()
   private readonly oscB = new Oscillator()
@@ -88,7 +92,16 @@ export class DspEngine {
     this.invFs = 1 / fs
     const fadeSec = opts.fadeSec ?? 8
     this.fadeStep = fadeSec > 0 ? 1 / (fadeSec * fs) : 1
-    this.noise = new NoiseGenerator(opts.rand)
+    const rand = opts.rand ?? Math.random
+    this.noise = new NoiseGenerator(rand)
+    this.nature = [
+      new RainGen(rand, fs, 0.6),
+      new WindGen(rand, fs),
+      new StormGen(rand, fs),
+      new RiverGen(rand, fs),
+      new ForestGen(rand, fs),
+    ]
+    this.wNature = NATURE_TYPES.map(() => new Smoother(0, TAU_GAIN, fs))
 
     const p = this.params
     this.carrier = new Smoother(p.carrierHz, TAU_USER_FREQ, fs)
@@ -105,9 +118,11 @@ export class DspEngine {
     this.wPink = new Smoother(0, TAU_GAIN, fs)
     this.wBrown = new Smoother(0, TAU_GAIN, fs)
     this.applyDiscrete()
-    for (const w of [this.wBin, this.wMon, this.wIso, this.wWhite, this.wPink, this.wBrown]) {
-      w.snap(w.target)
-    }
+    for (const w of this.allWeights()) w.snap(w.target)
+  }
+
+  private allWeights(): Smoother[] {
+    return [this.wBin, this.wMon, this.wIso, this.wWhite, this.wPink, this.wBrown, ...this.wNature]
   }
 
   /** Modo y tipo de ruido: pesos one-hot que se suavizan para cambiar sin clics. */
@@ -120,6 +135,7 @@ export class DspEngine {
     this.wWhite.target = n === 'white' ? 1 : 0
     this.wPink.target = n === 'pink' ? 1 : 0
     this.wBrown.target = n === 'brown' ? 1 : 0
+    NATURE_TYPES.forEach((t, i) => ((this.wNature[i] as Smoother).target = n === t ? 1 : 0))
   }
 
   private setFreqTau(tau: number): void {
@@ -197,9 +213,7 @@ export class DspEngine {
     this.noiseGain.snap(p.noiseGain)
     this.masterGain.snap(p.masterGain)
     this.comp.snap(p.loudnessComp ? loudnessCompGain(this.carrier.value) : 1)
-    for (const w of [this.wBin, this.wMon, this.wIso, this.wWhite, this.wPink, this.wBrown]) {
-      w.snap(w.target)
-    }
+    for (const w of this.allWeights()) w.snap(w.target)
   }
 
   stop(): void {
@@ -291,11 +305,15 @@ export class DspEngine {
       const toneR = (wb * b + wm * mono + wi * isoSig) * toneG
 
       this.noise.next()
-      const nz =
-        (this.wWhite.next() * this.noise.white +
-          this.wPink.next() * this.noise.pink +
-          this.wBrown.next() * this.noise.brown) *
-        this.noiseGain.next()
+      let bg =
+        this.wWhite.next() * this.noise.white +
+        this.wPink.next() * this.noise.pink +
+        this.wBrown.next() * this.noise.brown
+      for (let k = 0; k < 5; k++) {
+        const w = (this.wNature[k] as Smoother).next()
+        if (w > 1e-4) bg += w * (this.nature[k] as NatureGen).next()
+      }
+      const nz = bg * this.noiseGain.next()
 
       const scale = 0.5 * this.fade * this.masterGain.next()
       outL[i] = Math.tanh((toneL + nz) * scale)

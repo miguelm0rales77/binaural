@@ -1,5 +1,7 @@
 export type BeatMode = 'binaural' | 'monaural' | 'isochronic'
-export type NoiseType = 'none' | 'white' | 'pink' | 'brown'
+export type NoiseType = 'none' | 'white' | 'pink' | 'brown' | NatureType
+/** Sonidos de la naturaleza sintetizados (sin grabaciones). */
+export type NatureType = 'rain' | 'wind' | 'storm' | 'river' | 'forest'
 
 export interface EngineParams {
   mode: BeatMode
@@ -40,9 +42,9 @@ export const DEFAULT_PARAMS: EngineParams = {
   carrierHz: 250,
   beatHz: 10,
   isoDepth: 0.8,
-  toneGain: 0.6,
+  toneGain: 0.5,
   noiseType: 'none',
   noiseGain: 0.3,
   loudnessComp: true,
-  masterGain: 0.5,
+  masterGain: 0.3,
 }

@@ -5,7 +5,8 @@ import { RANGES } from './dsp/params'
 export const STORAGE_KEY = 'binaural:state:v1'
 export const TIMER_OPTIONS_MIN = [15, 30, 45, 60, 90] as const
 export const MAX_TIMER_MIN = 240
-export const ACCEPTED_KEY = 'binaural:accepted:v1'
+/** v2: el aviso de primer uso incorporó la nota de sensibilidad sensorial, así que se vuelve a mostrar una vez. */
+export const ACCEPTED_KEY = 'binaural:accepted:v2'
 export const ISO_WARNING_KEY = 'binaural:iso-warning-seen:v1'
 export const PRESETS_KEY = 'binaural:presets:v1'
 export const MAX_USER_PRESETS = 50

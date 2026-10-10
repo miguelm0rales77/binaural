@@ -1,7 +1,10 @@
-import { DEFAULT_PARAMS, type BeatMode, type EngineParams, type NoiseType } from './types'
+import { DEFAULT_PARAMS, type BeatMode, type EngineParams, type NatureType, type NoiseType } from './types'
 
 export const MODES: readonly BeatMode[] = ['binaural', 'monaural', 'isochronic']
-export const NOISE_TYPES: readonly NoiseType[] = ['none', 'white', 'pink', 'brown']
+export const NATURE_TYPES: readonly NatureType[] = ['rain', 'wind', 'storm', 'river', 'forest']
+export const NOISE_TYPES: readonly NoiseType[] = ['none', 'white', 'pink', 'brown', ...NATURE_TYPES]
+
+export const isNature = (t: NoiseType): t is NatureType => (NATURE_TYPES as readonly string[]).includes(t)
 
 /** Techo duro del volumen general (§5 del plan). */
 export const MASTER_CEILING = 0.8

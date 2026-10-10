@@ -1,3 +1,4 @@
+import { isNature } from './dsp/params'
 import type { BeatMode, NoiseType, Preset, Program } from './dsp/types'
 import { bandFor } from './bands'
 
@@ -12,6 +13,11 @@ export const NOISE_LABELS: Record<NoiseType, string> = {
   white: 'Blanco',
   pink: 'Rosa',
   brown: 'Marrón',
+  rain: 'Lluvia',
+  wind: 'Viento',
+  storm: 'Tormenta',
+  river: 'Río',
+  forest: 'Bosque',
 }
 
 const MIN = 60
@@ -83,7 +89,9 @@ export function describePreset(p: Preset): string {
     parts.push(`${+p.params.beatHz.toFixed(1)} Hz (${bandFor(p.params.beatHz).name})`)
   }
   const noise = p.params.noiseType ?? 'none'
-  if (noise !== 'none') parts.push(`ruido ${NOISE_LABELS[noise].toLowerCase()}`)
+  if (noise !== 'none') {
+    parts.push(isNature(noise) ? NOISE_LABELS[noise].toLowerCase() : `ruido ${NOISE_LABELS[noise].toLowerCase()}`)
+  }
   if (p.suggestedMinutes !== null) parts.push(`${p.suggestedMinutes} min`)
   return parts.join(' · ')
 }

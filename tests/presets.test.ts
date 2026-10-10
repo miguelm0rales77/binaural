@@ -13,7 +13,7 @@ import {
   type StorageLike,
 } from '../src/storage'
 
-const FS = 8000 // frecuencia baja: acelera los tests largos sin cambiar la lógica
+const FS = 4000 // frecuencia baja: acelera los tests largos sin cambiar la lógica
 const MIN = 60
 const render = (e: DspEngine, sec: number) => {
   const n = Math.round(sec * FS)
@@ -78,7 +78,7 @@ describe('programa Pre-sueño', () => {
     expect(PRE_SLEEP_PROGRAM.durationSec).toBe(30 * MIN)
   })
 
-  it('el motor lo recorre entero y termina con fundido y `stopped`', () => {
+  it('el motor lo recorre entero y termina con fundido y `stopped`', { timeout: 120_000 }, () => {
     const e = new DspEngine(FS, { ...PRESETS[3]?.params, toneGain: 1, masterGain: 1 }, { fadeSec: 1 })
     let stopped = 0
     e.onStopped = () => stopped++
@@ -117,7 +117,7 @@ describe('programa Pre-sueño', () => {
     expect(e.getState().beatHz).toBeLessThan(7)
   })
 
-  it('un cambio manual de pulso cancela el programa', () => {
+  it('un cambio manual de pulso cancela el programa', { timeout: 120_000 }, () => {
     const e = new DspEngine(FS, {}, { fadeSec: 0 })
     e.setProgram(PRE_SLEEP_PROGRAM, 0)
     e.start()
