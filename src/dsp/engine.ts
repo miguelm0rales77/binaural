@@ -24,6 +24,8 @@ export interface EngineOptions {
 export interface EngineState {
   playing: boolean
   elapsedSec: number
+  /** Segundos que quedan hasta el fin de sesión (temporizador o programa); null si no hay límite. */
+  remainingSec: number | null
   beatHz: number
   carrierHz: number
 }
@@ -50,7 +52,9 @@ export class DspEngine {
   private program: Program | null = null
   private programStart = 0
   private readonly programValue: ProgramValue = { beatHz: 0 }
-  private sessionSec: number | null = null
+  private programOrigin = 0 // elapsed en el que empezó el programa actual
+  private sessionLen: number | null = null
+  private sessionDeadline: number | null = null
 
   private readonly carrier: Smoother
   private readonly beat: Smoother
@@ -145,6 +149,7 @@ export class DspEngine {
   setProgram(program: Program | null, startAtSec = 0): void {
     this.program = program
     this.programStart = startAtSec
+    this.programOrigin = this.runState === 'idle' ? 0 : this.elapsed
     this.setFreqTau(program ? TAU_PROGRAM_FREQ : TAU_USER_FREQ)
     if (!program) {
       this.carrier.target = this.params.carrierHz
@@ -152,15 +157,25 @@ export class DspEngine {
     }
   }
 
-  /** Temporizador de sesión: al cumplirse empieza el fundido de salida. null = sin límite. */
+  /**
+   * Temporizador de sesión: dura `sec` segundos desde que se fija (o desde `start()` si está parado);
+   * al cumplirse empieza el fundido de salida. null = sin límite.
+   */
   setSessionTimer(sec: number | null): void {
-    this.sessionSec = sec
+    this.sessionLen = sec
+    this.sessionDeadline = sec === null ? null : this.runState === 'idle' ? sec : this.elapsed + sec
+  }
+
+  private programTime(): number {
+    return this.programStart + this.elapsed - this.programOrigin
   }
 
   start(): void {
     if (this.runState === 'idle') {
       this.fade = 0
       this.elapsed = 0
+      this.programOrigin = 0
+      this.sessionDeadline = this.sessionLen
       this.snapSmoothers()
     }
     this.runState = 'running'
@@ -188,9 +203,19 @@ export class DspEngine {
   }
 
   getState(): EngineState {
+    const playing = this.runState !== 'idle'
+    let remaining: number | null = null
+    if (playing) {
+      if (this.sessionDeadline !== null) remaining = this.sessionDeadline - this.elapsed
+      if (this.program) {
+        const r = this.program.durationSec - this.programTime()
+        remaining = remaining === null ? r : Math.min(remaining, r)
+      }
+    }
     return {
-      playing: this.runState !== 'idle',
+      playing,
       elapsedSec: this.elapsed,
+      remainingSec: remaining === null ? null : Math.max(0, remaining),
       beatHz: this.beat.value,
       carrierHz: this.carrier.value,
     }
@@ -209,16 +234,15 @@ export class DspEngine {
   private updateControl(): void {
     if (this.runState === 'idle') return
     if (this.runState === 'running') {
-      const progT = this.programStart + this.elapsed
       if (
-        (this.sessionSec !== null && this.elapsed >= this.sessionSec) ||
-        (this.program && progT >= this.program.durationSec)
+        (this.sessionDeadline !== null && this.elapsed >= this.sessionDeadline) ||
+        (this.program && this.programTime() >= this.program.durationSec)
       ) {
         this.runState = 'stopping'
       }
     }
     if (this.program) {
-      const v = evalProgram(this.program, this.programStart + this.elapsed, this.programValue)
+      const v = evalProgram(this.program, this.programTime(), this.programValue)
       this.beat.target = clamp(v.beatHz, 0.5, 40)
       if (v.carrierHz !== undefined) this.carrier.target = clamp(v.carrierHz, 100, 1000)
     }

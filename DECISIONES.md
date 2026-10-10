@@ -21,3 +21,10 @@
 - **Fase 3 – qué se guarda:** parámetros y temporizador (clave `binaural:state:v1`), con retardo de 250 ms. No se guarda si está sonando ni el programa.
 - **Fase 3 – avisos:** solo en modo binaural (portadora > 500 Hz, pulso > 30 Hz). El aviso de isocrónico 13–40 Hz es de la Fase 5.
 - **Fase 3 – volúmenes:** sliders lineales (0–100 %), como indica el plan.
+- **Fase 4 – presets y volúmenes:** los presets integrados solo fijan modo, frecuencias, ruido (tipo y nivel) y profundidad; **no tocan** `toneGain` ni `masterGain`, para no cambiar el volumen del usuario al cargarlos. «Rosa bajo» = ruido al 15 %; marrón de Pre-sueño = 25 %.
+- **Fase 4 – duraciones:** «30–45 min» de Concentración se fija en 30 min. Como 20 min (Relajación, Meditación) no está en la lista fija del temporizador, el temporizador acepta cualquier entero 1–240 min y el selector muestra el valor actual como opción extra.
+- **Fase 4 – temporizador (cambia lo de la Fase 3):** ahora cuenta desde que se fija (al elegirlo o al cargar un preset a mitad de sesión), no desde el Play. El motor informa de `remainingSec` (el menor entre el temporizador y el final del programa) y la UI lo muestra.
+- **Fase 4 – programas:** el tiempo del programa cuenta desde que se carga (`programOrigin`), así que cargar Pre-sueño a mitad de sesión empieza en su minuto 0. Al llegar a `durationSec` el motor hace el fundido de salida y para.
+- **Fase 4 – carga en caliente:** al cargar un preset sonando se envían primero los parámetros (cancelan el programa anterior), luego el programa y el temporizador; modo, ruido y ganancias se suavizan en 50 ms y portadora/pulso con τ=2 s (o 0,25 s si hay programa).
+- **Fase 4 – presets del usuario:** se guardan con todos los parámetros actuales (volúmenes incluidos), el programa activo si lo hay y el temporizador. Clave `binaural:presets:v1`, máx. 50, nombre ≤ 40 caracteres, validados al leer. Cualquier cambio manual desmarca el preset activo; tocar pulso o portadora cancela el programa.
+- **Fase 4 – lo que no se recuerda:** el programa en curso no se guarda en `binaural:state:v1`; tras recargar queda la configuración (en Pre-sueño, 10 Hz) pero sin programa.

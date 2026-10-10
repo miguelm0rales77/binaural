@@ -31,7 +31,8 @@ export interface Preset {
   name: string
   params: Partial<EngineParams>
   program?: Program
-  suggestedMinutes: number
+  /** Duración sugerida en minutos (se usa como temporizador); null = sin límite. */
+  suggestedMinutes: number | null
 }
 
 export const DEFAULT_PARAMS: EngineParams = {

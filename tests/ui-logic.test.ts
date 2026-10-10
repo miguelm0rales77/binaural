@@ -83,7 +83,7 @@ describe('localStorage', () => {
   it('JSON corrupto o con basura no rompe', () => {
     expect(loadState(fakeStorage({ [STORAGE_KEY]: '{no json' }))).toEqual(defaultState())
     expect(loadState(fakeStorage({ [STORAGE_KEY]: '42' }))).toEqual(defaultState())
-    const bad = loadState(fakeStorage({ [STORAGE_KEY]: JSON.stringify({ params: { carrierHz: 99999 }, timerMin: 7 }) }))
+    const bad = loadState(fakeStorage({ [STORAGE_KEY]: JSON.stringify({ params: { carrierHz: 99999 }, timerMin: 9999 }) }))
     expect(bad.params.carrierHz).toBe(1000)
     expect(bad.timerMin).toBeNull()
   })
