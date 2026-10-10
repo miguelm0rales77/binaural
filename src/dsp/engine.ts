@@ -171,8 +171,26 @@ export class DspEngine {
     if (this.runState === 'idle') {
       this.fade = 0
       this.elapsed = 0
+      this.snapSmoothers()
     }
     this.runState = 'running'
+  }
+
+  /** Parado no suena, así que los cambios hechos en reposo se aplican de golpe al arrancar. */
+  private snapSmoothers(): void {
+    const p = this.params
+    const prog = this.program
+    const v = prog ? evalProgram(prog, this.programStart, this.programValue) : null
+    this.beat.snap(clamp(v ? v.beatHz : p.beatHz, 0.5, 40))
+    this.carrier.snap(clamp(v?.carrierHz ?? p.carrierHz, 100, 1000))
+    this.depth.snap(p.isoDepth)
+    this.toneGain.snap(p.toneGain)
+    this.noiseGain.snap(p.noiseGain)
+    this.masterGain.snap(p.masterGain)
+    this.comp.snap(p.loudnessComp ? loudnessCompGain(this.carrier.value) : 1)
+    for (const w of [this.wBin, this.wMon, this.wIso, this.wWhite, this.wPink, this.wBrown]) {
+      w.snap(w.target)
+    }
   }
 
   stop(): void {

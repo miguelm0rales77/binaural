@@ -232,3 +232,16 @@ describe('8. programas', () => {
     expect(e.getState().beatHz).toBeCloseTo(4, 1)
   })
 })
+
+describe('arranque tras cambios en reposo', () => {
+  it('start() aplica de golpe los parámetros cambiados mientras estaba parado', () => {
+    const e = measureEngine({ carrierHz: 200, beatHz: 10 })
+    e.stop()
+    render(e, 10)
+    e.setParams({ carrierHz: 600, beatHz: 4 })
+    e.start()
+    render(e, 128)
+    expect(e.getState().carrierHz).toBeCloseTo(600, 3)
+    expect(e.getState().beatHz).toBeCloseTo(4, 3)
+  })
+})

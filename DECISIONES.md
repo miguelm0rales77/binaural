@@ -10,3 +10,8 @@
 - **Fase 1 – interpolación de portadora en programas:** se interpola si ambos pasos la definen; si solo uno, se usa ese valor.
 - **Fase 1 – rangos:** `setParams` recorta portadora a 100–1000, beat a 0,5–40, profundidad a 0,5–0,98 y ganancias a 0–1.
 - **Fase 1 – tests de ruido:** la pendiente se mide directamente sobre `NoiseGenerator` (Welch, Hann, bandas logarítmicas 100 Hz–8 kHz). El marrón da −5,4 dB/oct porque el integrador con pérdida (polo en 1/1,02) aplana por debajo de ~150 Hz; entra en la tolerancia del plan.
+- **Fase 2 – mensaje `timer`:** además de los cuatro mensajes del plan, el worklet acepta `{type:'timer', sec}` para el temporizador de sesión (el motor ya lo soporta).
+- **Fase 2 – parámetros iniciales:** se pasan al worklet por `processorOptions` y el motor, al arrancar desde parado (`start()`), fija de golpe todos los suavizados. Así no hay deslizamiento desde valores por defecto al pulsar Play.
+- **Fase 2 – tipos del worklet:** `src/audio/worklet-globals.d.ts` declara `AudioWorkletProcessor`, `registerProcessor` y `sampleRate`, que el lib DOM no incluye.
+- **Fase 2 – sliders:** ya en escala logarítmica (portadora 100–1000, pulso 0,5–40), aunque el plan lo pide en la Fase 3.
+- **Fase 2 – ciclo de vida:** tras `stopped` el contexto no se cierra ni se suspende; se reutiliza en el siguiente Play.
