@@ -316,3 +316,95 @@ select {
 .error {
   color: #ff8a8a;
 }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 7, 10, 0.92);
+  overflow-y: auto;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 480px;
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.dialog ul {
+  padding-left: 20px;
+}
+
+.dialog li {
+  margin-bottom: 10px;
+}
+
+.dialog .play {
+  margin: 16px 0 0;
+}
+
+.warning p {
+  margin: 0 0 8px;
+}
+
+.warning button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #f2c14e;
+  border-radius: 10px;
+  background: transparent;
+  color: #f2c14e;
+  font: inherit;
+  cursor: pointer;
+}
+
+.check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  cursor: pointer;
+}
+
+.check input {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.check small {
+  display: block;
+  color: var(--muted);
+}
+
+.footer {
+  margin-top: 32px;
+  text-align: center;
+}
+
+a {
+  color: var(--accent);
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 16px;
+  padding: 8px 0;
+}
+
+.about h2 {
+  margin: 24px 0 8px;
+}
+
+.about p {
+  margin: 0 0 12px;
+}

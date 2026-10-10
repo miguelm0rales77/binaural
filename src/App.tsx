@@ -2,20 +2,27 @@ import { useEffect, useRef, useState } from 'react'
 import { AudioController, type StateInfo } from './audio/AudioController'
 import { bandFor } from './bands'
 import type { EngineParams, NoiseType, Preset, Program } from './dsp/types'
-import { RANGES, sanitizeParams } from './dsp/params'
+import { MASTER_CEILING, RANGES, sanitizeParams } from './dsp/params'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
+  ACCEPTED_KEY,
+  ISO_WARNING_KEY,
   TIMER_OPTIONS_MIN,
   cleanPresetName,
   loadState,
   loadUserPresets,
+  readFlag,
   saveState,
   saveUserPresets,
+  writeFlag,
 } from './storage'
+import { ISO_FAST_WARNING } from './texts'
+import { About } from './ui/About'
+import { FirstUse } from './ui/FirstUse'
 import { ModeSelector } from './ui/ModeSelector'
 import { PresetPicker } from './ui/PresetPicker'
 import { Slider } from './ui/Slider'
-import { warningsFor } from './warnings'
+import { isoFastWarning, warningsFor } from './warnings'
 
 type Status = 'stopped' | 'starting' | 'playing' | 'stopping'
 
@@ -27,7 +34,42 @@ function mmss(sec: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
+const readView = () => (window.location.hash === '#acerca' ? 'about' : 'main')
+
 export default function App() {
+  const [accepted, setAccepted] = useState(() => readFlag(ACCEPTED_KEY))
+  const [isoSeen, setIsoSeen] = useState(() => readFlag(ISO_WARNING_KEY))
+  const [view, setView] = useState<'main' | 'about'>(readView)
+  useEffect(() => {
+    const onHash = () => setView(readView())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  const accept = () => {
+    writeFlag(ACCEPTED_KEY)
+    setAccepted(true)
+  }
+  const dismissIso = () => {
+    writeFlag(ISO_WARNING_KEY)
+    setIsoSeen(true)
+  }
+
+  return (
+    <>
+      {view === 'about' ? <About /> : <Player accepted={accepted} isoSeen={isoSeen} onDismissIso={dismissIso} />}
+      {!accepted && <FirstUse onAccept={accept} />}
+    </>
+  )
+}
+
+interface PlayerProps {
+  accepted: boolean
+  isoSeen: boolean
+  onDismissIso: () => void
+}
+
+function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const controller = useRef<AudioController | null>(null)
   const [initial] = useState(loadState)
   const [params, setParams] = useState<EngineParams>(initial.params)
@@ -107,7 +149,7 @@ export default function App() {
 
   const toggle = async () => {
     const c = controller.current
-    if (!c) return
+    if (!c || !accepted) return
     if (status === 'playing') {
       setStatus('stopping')
       c.stop()
@@ -207,6 +249,14 @@ export default function App() {
       <p className="band" data-band={band.id} data-testid="band">
         Banda: <strong>{band.name}</strong> <span>({band.range})</span>
       </p>
+      {isoFastWarning(params) && !isoSeen && (
+        <div className="warning" role="alert">
+          <p>⚠ {ISO_FAST_WARNING.text}</p>
+          <button type="button" onClick={onDismissIso}>
+            {ISO_FAST_WARNING.button}
+          </button>
+        </div>
+      )}
       {warnings.map((w) => (
         <p key={w} className="warning" role="status">
           ⚠ {w}
@@ -264,11 +314,23 @@ export default function App() {
         label="Volumen general"
         ariaLabel="Volumen general"
         min={0}
-        max={1}
+        max={MASTER_CEILING}
         value={params.masterGain}
-        format={pct}
+        format={(v) => pct(v / MASTER_CEILING)}
         onChange={(masterGain) => update({ masterGain })}
       />
+
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={params.loudnessComp}
+          onChange={(e) => update({ loudnessComp: e.target.checked })}
+        />
+        <span>
+          Compensación de sonoridad
+          <small>Mantiene parecido el volumen percibido al cambiar la portadora.</small>
+        </span>
+      </label>
 
       <div className="field">
         <label htmlFor="timer">Temporizador</label>
@@ -286,6 +348,10 @@ export default function App() {
         </select>
         <small>Cuenta desde que lo eliges. Al terminar, el sonido se apaga con un fundido de 8 s.</small>
       </div>
+
+      <footer className="footer">
+        <a href="#acerca">Acerca de / Ciencia</a>
+      </footer>
     </main>
   )
 }

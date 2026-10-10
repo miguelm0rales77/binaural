@@ -2,7 +2,7 @@ import { IsoEnvelope } from './envelope'
 import { loudnessCompGain } from './loudness'
 import { NoiseGenerator } from './noise'
 import { Oscillator, TWO_PI } from './oscillator'
-import { sanitizeParams } from './params'
+import { MASTER_CEILING, sanitizeParams } from './params'
 import { evalProgram, type ProgramValue } from './program'
 import { Smoother } from './smoothing'
 import { DEFAULT_PARAMS, type EngineParams, type Program } from './types'
@@ -19,6 +19,8 @@ export interface EngineOptions {
   rand?: () => number
   /** Duración del fundido de entrada y de salida. 0 = sin fundido. Por defecto 8 s. */
   fadeSec?: number
+  /** Techo del volumen general. Por defecto 0,8; los tests de ganancia máxima usan 1. */
+  masterCeiling?: number
 }
 
 export interface EngineState {
@@ -43,6 +45,7 @@ export class DspEngine {
   onStopped: (() => void) | null = null
 
   private params: EngineParams
+  private readonly masterCeiling: number
   private runState: RunState = 'idle'
   private elapsed = 0
   private fade = 0
@@ -80,7 +83,8 @@ export class DspEngine {
 
   constructor(fs: number, initial: Partial<EngineParams> = {}, opts: EngineOptions = {}) {
     this.fs = fs
-    this.params = sanitizeParams({ ...DEFAULT_PARAMS }, initial)
+    this.masterCeiling = opts.masterCeiling ?? MASTER_CEILING
+    this.params = sanitizeParams({ ...DEFAULT_PARAMS }, initial, this.masterCeiling)
     this.invFs = 1 / fs
     const fadeSec = opts.fadeSec ?? 8
     this.fadeStep = fadeSec > 0 ? 1 / (fadeSec * fs) : 1
@@ -128,7 +132,7 @@ export class DspEngine {
    * mientras corre un programa, el programa se cancela.
    */
   setParams(patch: Partial<EngineParams>): void {
-    this.params = sanitizeParams(this.params, patch)
+    this.params = sanitizeParams(this.params, patch, this.masterCeiling)
     const p = this.params
     if (this.program && (patch.beatHz !== undefined || patch.carrierHz !== undefined)) {
       this.program = null

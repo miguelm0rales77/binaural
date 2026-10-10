@@ -14,7 +14,7 @@ export function measureEngine(params: ConstructorParameters<typeof DspEngine>[1]
   const e = new DspEngine(
     FS,
     { toneGain: 1, noiseGain: 1, masterGain: 1, loudnessComp: false, noiseType: 'none', ...params },
-    { fadeSec: 0, rand: seeded(1234) },
+    { fadeSec: 0, rand: seeded(1234), masterCeiling: 1 },
   )
   e.start()
   return e

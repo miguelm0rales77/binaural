@@ -136,7 +136,7 @@ describe('6. seguridad', () => {
       const e = new DspEngine(
         FS,
         { mode, carrierHz: 100, toneGain: 1, noiseGain: 1, masterGain: 1, noiseType: 'brown', loudnessComp: true },
-        { fadeSec: 0, rand: mulberry32(7) },
+        { fadeSec: 0, rand: mulberry32(7), masterCeiling: 1 },
       )
       e.start()
       const { L, R } = render(e, FS * 5)
@@ -153,7 +153,7 @@ describe('6. seguridad', () => {
 
 describe('7. fundidos', () => {
   it('entrada: ≈0 al empezar y sube; salida: 0 tras 8 s y emite stopped', () => {
-    const e = new DspEngine(FS, { toneGain: 1, masterGain: 1, noiseType: 'pink', noiseGain: 1 }, { rand: mulberry32(3) })
+    const e = new DspEngine(FS, { toneGain: 1, masterGain: 1, noiseType: 'pink', noiseGain: 1 }, { rand: mulberry32(3), masterCeiling: 1 })
     let stopped = 0
     e.onStopped = () => stopped++
 
