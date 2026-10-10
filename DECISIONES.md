@@ -15,3 +15,9 @@
 - **Fase 2 – tipos del worklet:** `src/audio/worklet-globals.d.ts` declara `AudioWorkletProcessor`, `registerProcessor` y `sampleRate`, que el lib DOM no incluye.
 - **Fase 2 – sliders:** ya en escala logarítmica (portadora 100–1000, pulso 0,5–40), aunque el plan lo pide en la Fase 3.
 - **Fase 2 – ciclo de vida:** tras `stopped` el contexto no se cierra ni se suspende; se reutiliza en el siguiente Play.
+- **Fase 3 – sanitizado compartido:** `src/dsp/params.ts` (`sanitizeParams`, `RANGES`) sustituye al sanitizado privado del motor y lo usan también `localStorage` y la UI, así un estado guardado corrupto o fuera de rango nunca llega al audio.
+- **Fase 3 – bandas:** límite superior exclusivo (4 Hz → Theta, 8 → Alfa, 13 → Beta, 30 → Gamma). La banda mostrada sigue el pulso *real* mientras suena (sigue el programa o el suavizado).
+- **Fase 3 – temporizador:** es la duración total de la sesión medida desde el Play. Si se cambia durante la reproducción y ya se ha pasado, el fundido de salida empieza enseguida. El sonido dura el temporizador + 8 s de fundido.
+- **Fase 3 – qué se guarda:** parámetros y temporizador (clave `binaural:state:v1`), con retardo de 250 ms. No se guarda si está sonando ni el programa.
+- **Fase 3 – avisos:** solo en modo binaural (portadora > 500 Hz, pulso > 30 Hz). El aviso de isocrónico 13–40 Hz es de la Fase 5.
+- **Fase 3 – volúmenes:** sliders lineales (0–100 %), como indica el plan.

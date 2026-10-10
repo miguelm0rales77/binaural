@@ -82,6 +82,117 @@ input[type='range'] {
   accent-color: var(--accent);
 }
 
+.status {
+  margin: 0 0 24px;
+}
+
+fieldset.modes {
+  margin: 0 0 24px;
+  padding: 0;
+  border: 0;
+}
+
+.modes legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.segmented {
+  display: flex;
+  gap: 8px;
+}
+
+.seg {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.seg.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+.seg input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.seg:focus-within {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.mode-text {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.badge {
+  color: var(--fg);
+}
+
+.band {
+  margin: -8px 0 16px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--band, var(--accent));
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+.band span {
+  color: var(--muted);
+}
+
+.band[data-band='delta'] { --band: #7c8cff; }
+.band[data-band='theta'] { --band: #5fc9c0; }
+.band[data-band='alpha'] { --band: #7bd88f; }
+.band[data-band='beta'] { --band: #f2c14e; }
+.band[data-band='gamma'] { --band: #f08a6c; }
+
+.warning {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(242, 193, 78, 0.12);
+  color: #f2c14e;
+  font-size: 0.9375rem;
+}
+
+select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #171c26;
+  color: var(--fg);
+  font: inherit;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.field small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
 .error {
   color: #ff8a8a;
 }

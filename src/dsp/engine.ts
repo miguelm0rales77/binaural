@@ -2,6 +2,7 @@ import { IsoEnvelope } from './envelope'
 import { loudnessCompGain } from './loudness'
 import { NoiseGenerator } from './noise'
 import { Oscillator, TWO_PI } from './oscillator'
+import { sanitizeParams } from './params'
 import { evalProgram, type ProgramValue } from './program'
 import { Smoother } from './smoothing'
 import { DEFAULT_PARAMS, type EngineParams, type Program } from './types'
@@ -75,7 +76,7 @@ export class DspEngine {
 
   constructor(fs: number, initial: Partial<EngineParams> = {}, opts: EngineOptions = {}) {
     this.fs = fs
-    this.params = DspEngine.sanitize({ ...DEFAULT_PARAMS }, initial)
+    this.params = sanitizeParams({ ...DEFAULT_PARAMS }, initial)
     this.invFs = 1 / fs
     const fadeSec = opts.fadeSec ?? 8
     this.fadeStep = fadeSec > 0 ? 1 / (fadeSec * fs) : 1
@@ -101,17 +102,6 @@ export class DspEngine {
     }
   }
 
-  private static sanitize(base: EngineParams, patch: Partial<EngineParams>): EngineParams {
-    const p = { ...base, ...patch }
-    p.carrierHz = clamp(p.carrierHz, 100, 1000)
-    p.beatHz = clamp(p.beatHz, 0.5, 40)
-    p.isoDepth = clamp(p.isoDepth, 0.5, 0.98)
-    p.toneGain = clamp(p.toneGain, 0, 1)
-    p.noiseGain = clamp(p.noiseGain, 0, 1)
-    p.masterGain = clamp(p.masterGain, 0, 1)
-    return p
-  }
-
   /** Modo y tipo de ruido: pesos one-hot que se suavizan para cambiar sin clics. */
   private applyDiscrete(): void {
     const m = this.params.mode
@@ -134,7 +124,7 @@ export class DspEngine {
    * mientras corre un programa, el programa se cancela.
    */
   setParams(patch: Partial<EngineParams>): void {
-    this.params = DspEngine.sanitize(this.params, patch)
+    this.params = sanitizeParams(this.params, patch)
     const p = this.params
     if (this.program && (patch.beatHz !== undefined || patch.carrierHz !== undefined)) {
       this.program = null
