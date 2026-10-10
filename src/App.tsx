@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AudioController, type StateInfo } from './audio/AudioController'
+import { BackgroundPlayer, type BackgroundState } from './audio/BackgroundPlayer'
 import { bandFor } from './bands'
 import type { EngineParams, NoiseType, Preset, Program } from './dsp/types'
 import { MASTER_CEILING, NATURE_TYPES, RANGES, isNature, sanitizeParams } from './dsp/params'
@@ -18,6 +19,8 @@ import {
 } from './storage'
 import { ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
+import { BackgroundPanel } from './ui/BackgroundPanel'
+import { ExportPanel } from './ui/ExportPanel'
 import { FirstUse } from './ui/FirstUse'
 import { ModeSelector } from './ui/ModeSelector'
 import { PresetPicker } from './ui/PresetPicker'
@@ -78,6 +81,11 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [program, setProgram] = useState<Program | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('stopped')
+  const bg = useRef<BackgroundPlayer | null>(null)
+  const [bgState, setBgState] = useState<BackgroundState>('idle')
+  const [bgProgress, setBgProgress] = useState(0)
+  const [bgError, setBgError] = useState<string | null>(null)
+  const [bgStale, setBgStale] = useState(false)
   const [info, setInfo] = useState<StateInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -89,7 +97,12 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       setInfo(null)
     }
     controller.current = c
+    const b = new BackgroundPlayer()
+    b.onState = setBgState
+    b.onProgress = setBgProgress
+    bg.current = b
     return () => {
+      b.stop()
       void c.dispose()
     }
   }, [])
@@ -105,6 +118,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   }, [userPresets])
 
   const update = (patch: Partial<EngineParams>) => {
+    setBgStale(true)
     setParams((p) => ({ ...p, ...patch }))
     controller.current?.setParams(patch)
     // Tocar el pulso o la portadora a mano cancela el programa (igual que hace el motor).
@@ -115,6 +129,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const loadPreset = (p: Preset) => {
     if (status === 'starting' || status === 'stopping') return
     const next = sanitizeParams(params, p.params)
+    setBgStale(true)
     setParams(next)
     setProgram(p.program ?? null)
     setActiveId(p.id)
@@ -156,6 +171,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       return
     }
     if (status !== 'stopped') return
+    bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
     setStatus('starting')
     setError(null)
     try {
@@ -165,6 +181,19 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       setError(e instanceof Error ? e.message : String(e))
       setStatus('stopped')
     }
+  }
+
+  const startBackground = () => {
+    if (!accepted) return
+    if (status === 'playing') {
+      setStatus('stopping')
+      controller.current?.stop()
+    }
+    setBgError(null)
+    setBgStale(false)
+    bg.current
+      ?.start(params, program?.name ?? 'Binaural')
+      .catch((e) => setBgError(e instanceof Error ? e.message : String(e)))
   }
 
   const busy = status === 'starting' || status === 'stopping'
@@ -364,6 +393,19 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         </select>
         <small>Cuenta desde que lo eliges. Al terminar, el sonido se apaga con un fundido de 8 s.</small>
       </div>
+
+      <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />
+
+      <BackgroundPanel
+        state={bgState}
+        progress={bgProgress}
+        hasProgram={program !== null}
+        stale={bgStale}
+        disabled={!accepted}
+        error={bgError}
+        onStart={startBackground}
+        onStop={() => bg.current?.stop()}
+      />
 
       <footer className="footer">
         <a href="#acerca">Acerca de / Ciencia</a>

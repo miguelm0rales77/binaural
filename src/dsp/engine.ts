@@ -22,6 +22,8 @@ export interface EngineOptions {
   fadeSec?: number
   /** Techo del volumen general. Por defecto 0,8; los tests de ganancia máxima usan 1. */
   masterCeiling?: number
+  /** false = salida sin el tanh final (solo para la exportación de bucles, que mezcla dos renders y aplica el tanh una vez). */
+  softClip?: boolean
 }
 
 export interface EngineState {
@@ -47,6 +49,7 @@ export class DspEngine {
 
   private params: EngineParams
   private readonly masterCeiling: number
+  private readonly softClip: boolean
   private runState: RunState = 'idle'
   private elapsed = 0
   private fade = 0
@@ -88,6 +91,7 @@ export class DspEngine {
   constructor(fs: number, initial: Partial<EngineParams> = {}, opts: EngineOptions = {}) {
     this.fs = fs
     this.masterCeiling = opts.masterCeiling ?? MASTER_CEILING
+    this.softClip = opts.softClip ?? true
     this.params = sanitizeParams({ ...DEFAULT_PARAMS }, initial, this.masterCeiling)
     this.invFs = 1 / fs
     const fadeSec = opts.fadeSec ?? 8
@@ -316,8 +320,10 @@ export class DspEngine {
       const nz = bg * this.noiseGain.next()
 
       const scale = 0.5 * this.fade * this.masterGain.next()
-      outL[i] = Math.tanh((toneL + nz) * scale)
-      outR[i] = Math.tanh((toneR + nz) * scale)
+      const mixL = (toneL + nz) * scale
+      const mixR = (toneR + nz) * scale
+      outL[i] = this.softClip ? Math.tanh(mixL) : mixL
+      outR[i] = this.softClip ? Math.tanh(mixR) : mixR
     }
     if (this.runState !== 'idle') this.elapsed += m * this.invFs
   }

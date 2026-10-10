@@ -408,3 +408,79 @@ a {
 .about p {
   margin: 0 0 12px;
 }
+
+.export,
+.background {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.notes {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.secondary {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.secondary:focus-visible,
+input[type='number']:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+input[type='number'] {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #171c26;
+  color: var(--fg);
+  font: inherit;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.progress progress {
+  flex: 1;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.progress span {
+  min-width: 3.5ch;
+  font-variant-numeric: tabular-nums;
+}
