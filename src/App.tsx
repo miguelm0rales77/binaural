@@ -21,6 +21,7 @@ import { ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
 import { ExportPanel } from './ui/ExportPanel'
+import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
 import { ModeSelector } from './ui/ModeSelector'
 import { PresetPicker } from './ui/PresetPicker'
@@ -88,6 +89,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [bgStale, setBgStale] = useState(false)
   const [info, setInfo] = useState<StateInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
 
   useEffect(() => {
     const c = new AudioController()
@@ -209,26 +211,31 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
 
   return (
     <main className="app">
-      <h1>Binaural</h1>
-      <p className="hint">Usa auriculares en modo binaural y mantén el volumen bajo.</p>
+      <header className="top">
+        <h1>Binaural</h1>
+        <a href="#acerca">Acerca de</a>
+      </header>
 
-      <button className="play" onClick={toggle} disabled={busy} aria-live="polite">
-        {label}
-      </button>
+      <div className="player" role="region" aria-label="Reproducción">
+        <button className="play" onClick={toggle} disabled={busy} aria-live="polite">
+          {label}
+        </button>
+        <p className="status" data-testid="status">
+          {status === 'playing' && info
+            ? remaining !== null && remaining <= 0
+              ? 'Terminando la sesión…'
+              : `Sonando · ${mmss(info.elapsedSec)}${remaining !== null ? ` · quedan ${mmss(remaining)}` : ''}`
+            : status === 'stopping'
+              ? 'Fundido de salida…'
+              : 'Parado'}
+        </p>
+      </div>
       {error && (
         <p className="error" role="alert">
           No se pudo iniciar el audio: {error}
         </p>
       )}
-      <p className="status" data-testid="status">
-        {status === 'playing' && info
-          ? remaining !== null && remaining <= 0
-            ? 'Terminando la sesión…'
-            : `Sonando · ${mmss(info.elapsedSec)}${remaining !== null ? ` · quedan ${mmss(remaining)}` : ''}`
-          : status === 'stopping'
-            ? 'Fundido de salida…'
-            : 'Parado'}
-      </p>
+      <p className="hint">Usa auriculares en modo binaural y mantén el volumen bajo.</p>
 
       {program && (
         <p className="program" data-testid="program">
@@ -243,6 +250,17 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         </p>
       )}
 
+      <section className="viz" aria-label="Visualización del pulso">
+        <label className="check">
+          <input type="checkbox" checked={showViz} onChange={(e) => setShowViz(e.target.checked)} />
+          <span>
+            Mostrar el patrón del pulso
+            <small>No parpadea: dibuja el patrón de un segundo y un punto que lo recorre una vez por segundo.</small>
+          </span>
+        </label>
+        {showViz && <Pulse mode={params.mode} beatHz={shownBeat} depth={params.isoDepth} active={live} />}
+      </section>
+
       <PresetPicker
         builtIn={PRESETS}
         user={userPresets}
@@ -252,147 +270,150 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         onDelete={deletePreset}
       />
 
-      <ModeSelector mode={params.mode} onChange={(mode) => update({ mode })} />
+      <section className="controls" aria-labelledby="controls-title">
+        <h2 id="controls-title">Ajustes</h2>
+        <ModeSelector mode={params.mode} onChange={(mode) => update({ mode })} />
 
-      <Slider
-        label="Portadora"
-        ariaLabel="Frecuencia portadora en hercios"
-        scale="log"
-        min={RANGES.carrierHz.min}
-        max={RANGES.carrierHz.max}
-        value={shown.carrierHz}
-        format={hz}
-        onChange={(carrierHz) => update({ carrierHz })}
-      />
-      <Slider
-        label="Pulso"
-        ariaLabel="Frecuencia del pulso en hercios"
-        scale="log"
-        min={RANGES.beatHz.min}
-        max={RANGES.beatHz.max}
-        value={shown.beatHz}
-        format={hz}
-        onChange={(beatHz) => update({ beatHz })}
-      />
-
-      <p className="band" data-band={band.id} data-testid="band">
-        Banda: <strong>{band.name}</strong> <span>({band.range})</span>
-      </p>
-      {isoFastWarning(params) && !isoSeen && (
-        <div className="warning" role="alert">
-          <p>⚠ {ISO_FAST_WARNING.text}</p>
-          <button type="button" onClick={onDismissIso}>
-            {ISO_FAST_WARNING.button}
-          </button>
-        </div>
-      )}
-      {warnings.map((w) => (
-        <p key={w} className="warning" role="status">
-          ⚠ {w}
-        </p>
-      ))}
-
-      {params.mode === 'isochronic' && (
         <Slider
-          label="Profundidad isocrónica"
-          ariaLabel="Profundidad de la modulación isocrónica"
-          min={RANGES.isoDepth.min}
-          max={RANGES.isoDepth.max}
-          value={params.isoDepth}
-          format={pct}
-          onChange={(isoDepth) => update({ isoDepth })}
+          label="Portadora"
+          ariaLabel="Frecuencia portadora en hercios"
+          scale="log"
+          min={RANGES.carrierHz.min}
+          max={RANGES.carrierHz.max}
+          value={shown.carrierHz}
+          format={hz}
+          onChange={(carrierHz) => update({ carrierHz })}
         />
-      )}
+        <Slider
+          label="Pulso"
+          ariaLabel="Frecuencia del pulso en hercios"
+          scale="log"
+          min={RANGES.beatHz.min}
+          max={RANGES.beatHz.max}
+          value={shown.beatHz}
+          format={hz}
+          onChange={(beatHz) => update({ beatHz })}
+        />
 
-      <Slider
-        label="Volumen del tono"
-        ariaLabel="Volumen del tono"
-        min={0}
-        max={1}
-        value={params.toneGain}
-        format={pct}
-        onChange={(toneGain) => update({ toneGain })}
-      />
-
-      <div className="field">
-        <label htmlFor="noise-type">Fondo</label>
-        <select
-          id="noise-type"
-          value={params.noiseType}
-          onChange={(e) => update({ noiseType: e.target.value as NoiseType })}
-        >
-          <option value="none">{NOISE_LABELS.none}</option>
-          <optgroup label="Ruidos">
-            {(['white', 'pink', 'brown'] as const).map((t) => (
-              <option key={t} value={t}>
-                {NOISE_LABELS[t]}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Sonidos de la naturaleza">
-            {NATURE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {NOISE_LABELS[t]}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-        {isNature(params.noiseType) && (
-          <small>
-            Sonido generado por síntesis (no es una grabación) y siempre suave, sin picos repentinos.
-            {params.noiseType === 'storm' && ' Incluye truenos lejanos y espaciados.'}
-          </small>
+        <p className="band" data-band={band.id} data-testid="band">
+          Banda: <strong>{band.name}</strong> <span>({band.range})</span>
+        </p>
+        {isoFastWarning(params) && !isoSeen && (
+          <div className="warning" role="alert">
+            <p>⚠ {ISO_FAST_WARNING.text}</p>
+            <button type="button" onClick={onDismissIso}>
+              {ISO_FAST_WARNING.button}
+            </button>
+          </div>
         )}
-      </div>
-      <Slider
-        label="Volumen del fondo"
-        ariaLabel="Volumen del fondo"
-        min={0}
-        max={1}
-        value={params.noiseGain}
-        disabled={params.noiseType === 'none'}
-        format={pct}
-        onChange={(noiseGain) => update({ noiseGain })}
-      />
+        {warnings.map((w) => (
+          <p key={w} className="warning" role="status">
+            ⚠ {w}
+          </p>
+        ))}
 
-      <Slider
-        label="Volumen general"
-        ariaLabel="Volumen general"
-        min={0}
-        max={MASTER_CEILING}
-        value={params.masterGain}
-        format={(v) => pct(v / MASTER_CEILING)}
-        onChange={(masterGain) => update({ masterGain })}
-      />
+        {params.mode === 'isochronic' && (
+          <Slider
+            label="Profundidad isocrónica"
+            ariaLabel="Profundidad de la modulación isocrónica"
+            min={RANGES.isoDepth.min}
+            max={RANGES.isoDepth.max}
+            value={params.isoDepth}
+            format={pct}
+            onChange={(isoDepth) => update({ isoDepth })}
+          />
+        )}
 
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={params.loudnessComp}
-          onChange={(e) => update({ loudnessComp: e.target.checked })}
+        <Slider
+          label="Volumen del tono"
+          ariaLabel="Volumen del tono"
+          min={0}
+          max={1}
+          value={params.toneGain}
+          format={pct}
+          onChange={(toneGain) => update({ toneGain })}
         />
-        <span>
-          Compensación de sonoridad
-          <small>Mantiene parecido el volumen percibido al cambiar la portadora.</small>
-        </span>
-      </label>
 
-      <div className="field">
-        <label htmlFor="timer">Temporizador</label>
-        <select
-          id="timer"
-          value={timerMin ?? ''}
-          onChange={(e) => changeTimer(e.target.value === '' ? null : Number(e.target.value))}
-        >
-          <option value="">Sin límite</option>
-          {timerChoices.map((m) => (
-            <option key={m} value={m}>
-              {m} min
-            </option>
-          ))}
-        </select>
-        <small>Cuenta desde que lo eliges. Al terminar, el sonido se apaga con un fundido de 8 s.</small>
-      </div>
+        <div className="field">
+          <label htmlFor="noise-type">Fondo</label>
+          <select
+            id="noise-type"
+            value={params.noiseType}
+            onChange={(e) => update({ noiseType: e.target.value as NoiseType })}
+          >
+            <option value="none">{NOISE_LABELS.none}</option>
+            <optgroup label="Ruidos">
+              {(['white', 'pink', 'brown'] as const).map((t) => (
+                <option key={t} value={t}>
+                  {NOISE_LABELS[t]}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Sonidos de la naturaleza">
+              {NATURE_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {NOISE_LABELS[t]}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+          {isNature(params.noiseType) && (
+            <small>
+              Sonido generado por síntesis (no es una grabación) y siempre suave, sin picos repentinos.
+              {params.noiseType === 'storm' && ' Incluye truenos lejanos y espaciados.'}
+            </small>
+          )}
+        </div>
+        <Slider
+          label="Volumen del fondo"
+          ariaLabel="Volumen del fondo"
+          min={0}
+          max={1}
+          value={params.noiseGain}
+          disabled={params.noiseType === 'none'}
+          format={pct}
+          onChange={(noiseGain) => update({ noiseGain })}
+        />
+
+        <Slider
+          label="Volumen general"
+          ariaLabel="Volumen general"
+          min={0}
+          max={MASTER_CEILING}
+          value={params.masterGain}
+          format={(v) => pct(v / MASTER_CEILING)}
+          onChange={(masterGain) => update({ masterGain })}
+        />
+
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={params.loudnessComp}
+            onChange={(e) => update({ loudnessComp: e.target.checked })}
+          />
+          <span>
+            Compensación de sonoridad
+            <small>Mantiene parecido el volumen percibido al cambiar la portadora.</small>
+          </span>
+        </label>
+
+        <div className="field">
+          <label htmlFor="timer">Temporizador</label>
+          <select
+            id="timer"
+            value={timerMin ?? ''}
+            onChange={(e) => changeTimer(e.target.value === '' ? null : Number(e.target.value))}
+          >
+            <option value="">Sin límite</option>
+            {timerChoices.map((m) => (
+              <option key={m} value={m}>
+                {m} min
+              </option>
+            ))}
+          </select>
+          <small>Cuenta desde que lo eliges. Al terminar, el sonido se apaga con un fundido de 8 s.</small>
+        </div>
+      </section>
 
       <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />
 

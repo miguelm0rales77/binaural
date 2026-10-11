@@ -16,8 +16,10 @@ export function BackgroundPanel({ state, progress, hasProgram, stale, disabled, 
   const busy = state === 'preparing'
   const active = state === 'playing' || state === 'paused'
   return (
-    <section className="background" aria-labelledby="bg-title">
-      <h2 id="bg-title">Reproducir en segundo plano</h2>
+    <details className="panel background">
+      <summary>
+        <h2>Reproducir en segundo plano</h2>
+      </summary>
       <p className="muted">
         En el iPhone el audio normal se corta al bloquear la pantalla. Este modo genera un bucle de 5 minutos y lo
         reproduce como un archivo de audio, que sigue sonando con la pantalla bloqueada y no depende del interruptor de
@@ -64,6 +66,6 @@ export function BackgroundPanel({ state, progress, hasProgram, stale, disabled, 
           No se pudo iniciar: {error}
         </p>
       )}
-    </section>
+    </details>
   )
 }

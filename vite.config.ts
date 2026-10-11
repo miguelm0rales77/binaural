@@ -2,8 +2,12 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
+/** Ruta base de despliegue (BASE_PATH): '/' en la raíz de un dominio, '/nombre-repo/' en GitHub Pages. */
+const base = `/${(process.env.BASE_PATH ?? '').replace(/^\/+|\/+$/g, '')}/`.replace(/^\/\/$/, '/')
+
 // https://vite.dev/config/
 export default defineConfig({
+  base,
   plugins: [
     react(),
     // Sin PWA bajo Vitest: no hace falta y solo añade ruido.
@@ -20,8 +24,8 @@ export default defineConfig({
               short_name: 'Binaural',
               description: 'Generador de tonos con pulso (binaural, monaural e isocrónico) y sonidos de fondo.',
               lang: 'es',
-              start_url: '/',
-              scope: '/',
+              start_url: base,
+              scope: base,
               display: 'standalone',
               background_color: '#0f1218',
               theme_color: '#0f1218',

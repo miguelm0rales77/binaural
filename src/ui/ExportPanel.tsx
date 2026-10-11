@@ -65,8 +65,10 @@ export function ExportPanel({ params, program, timerMin, disabled }: Props) {
   const pct = running ? Math.round(state.fraction * 100) : 0
 
   return (
-    <section className="export" aria-labelledby="export-title">
-      <h2 id="export-title">Exportar a WAV</h2>
+    <details className="panel export">
+      <summary>
+        <h2>Exportar a WAV</h2>
+      </summary>
       <p className="muted">
         Genera un archivo de audio (PCM de 16 bits, estéreo, 44,1 kHz) con la configuración actual. Se crea en tu
         dispositivo, sin enviar nada a ningún sitio.
@@ -136,6 +138,6 @@ export function ExportPanel({ params, program, timerMin, disabled }: Props) {
           No se pudo exportar: {state.message}
         </p>
       )}
-    </section>
+    </details>
   )
 }
