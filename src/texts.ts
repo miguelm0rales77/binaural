@@ -24,6 +24,24 @@ export const REFERENCE = {
   doi: 'https://doi.org/10.1007/s00426-018-1066-8',
 } as const
 
+/** Qué se mide en el EEG en cada banda. Describe actividad cerebral, no un efecto de esta aplicación. */
+export const BAND_LEGENDS = {
+  delta: 'En el EEG, la actividad delta es típica del sueño profundo.',
+  theta: 'En el EEG, la actividad theta se observa en la somnolencia, la meditación y algunos procesos de memoria.',
+  alpha: 'En el EEG, el ritmo alfa es típico de la vigilia relajada, sobre todo con los ojos cerrados.',
+  beta: 'En el EEG, la actividad beta se asocia con la vigilia activa y la concentración.',
+  gamma:
+    'En el EEG, la actividad gamma se ha asociado con la atención, la percepción y la memoria, y con el instante en que se «ve» de golpe la solución de un problema (insight).',
+} as const
+
+export const BAND_NOTE = 'Es lo que se mide en el cerebro, no un efecto de escuchar este pulso.'
+
+export const REFERENCE_INSIGHT = {
+  citation:
+    'Jung-Beeman, M., Bowden, E. M., Haberman, J., Frymiare, J. L., Arambel-Liu, S., Greenblatt, R., Reber, P. J. y Kounios, J. (2004). Neural activity when people solve verbal problems with insight. PLoS Biology, 2(4), e97.',
+  doi: 'https://doi.org/10.1371/journal.pbio.0020097',
+} as const
+
 export const ABOUT = {
   title: 'Acerca de / Ciencia',
   sections: [
@@ -39,6 +57,7 @@ export const ABOUT = {
       heading: 'Qué dice la investigación',
       paragraphs: [
         'Un metaanálisis de 22 estudios (Garcia-Argibay, Santed y Reales, 2019) encontró un efecto global de tamaño medio (g = 0,45) de los pulsos binaurales sobre la memoria, la atención, la ansiedad y la percepción del dolor.',
+        'Los nombres de las bandas (delta, theta, alfa, beta, gamma) son los convencionales del EEG y describen la actividad que se mide en el cerebro. Por ejemplo, un estudio con EEG registró una ráfaga de actividad gamma justo antes de que las personas resolvieran un problema «de golpe», con una sensación de ¡ajá! (Jung-Beeman et al., 2004). Eso describe lo que hace el cerebro por sí mismo: no demuestra que escuchar un pulso de esa frecuencia produzca ese estado.',
         'Aun así, la evidencia es heterogénea: los estudios son pocos y usan frecuencias, duraciones y medidas distintas, y los resultados no son uniformes. Además, que el cerebro se «sincronice» con el pulso, medido con EEG, no está demostrado de forma concluyente.',
       ],
     },

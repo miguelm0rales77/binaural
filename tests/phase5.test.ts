@@ -12,7 +12,8 @@ import {
   writeFlag,
   type StorageLike,
 } from '../src/storage'
-import { ABOUT, FIRST_USE, ISO_FAST_WARNING, REFERENCE } from '../src/texts'
+import { ABOUT, BAND_LEGENDS, BAND_NOTE, FIRST_USE, ISO_FAST_WARNING, REFERENCE, REFERENCE_INSIGHT } from '../src/texts'
+import { bandFor } from '../src/bands'
 import { isoFastWarning } from '../src/warnings'
 
 const peakOf = (...chs: Float32Array[]) => {
@@ -128,6 +129,8 @@ describe('textos', () => {
     FIRST_USE.intro,
     ...FIRST_USE.items,
     ISO_FAST_WARNING.text,
+    ...Object.values(BAND_LEGENDS),
+    BAND_NOTE,
     ABOUT.title,
     ...ABOUT.sections.flatMap((s) => [s.heading, ...s.paragraphs]),
   ].join('\n')
@@ -157,5 +160,32 @@ describe('textos', () => {
     expect(t).toMatch(/EEG/)
     expect(t).toMatch(/no está demostrado de forma concluyente/)
     expect(REFERENCE.doi).toBe('https://doi.org/10.1007/s00426-018-1066-8')
+  })
+})
+
+describe('leyendas de las bandas', () => {
+  const ids = ['delta', 'theta', 'alpha', 'beta', 'gamma'] as const
+  it('las cinco bandas tienen leyenda y la devuelve bandFor', () => {
+    for (const id of ids) expect(BAND_LEGENDS[id].length).toBeGreaterThan(20)
+    expect(bandFor(2).legend).toBe(BAND_LEGENDS.delta)
+    expect(bandFor(6).legend).toBe(BAND_LEGENDS.theta)
+    expect(bandFor(10).legend).toBe(BAND_LEGENDS.alpha)
+    expect(bandFor(20).legend).toBe(BAND_LEGENDS.beta)
+    expect(bandFor(40).legend).toBe(BAND_LEGENDS.gamma)
+  })
+  it('hablan de lo que se mide en el EEG, no de lo que hace la aplicación', () => {
+    for (const id of ids) {
+      expect(BAND_LEGENDS[id]).toMatch(/^En el EEG/)
+      expect(BAND_LEGENDS[id]).not.toMatch(/\b(te|le|les) (ayuda|permite|hace|produce|provoca|induce)/i)
+    }
+    expect(BAND_NOTE).toMatch(/no un efecto de escuchar/)
+  })
+  it('gamma menciona el insight (el estudio citado), no «resolución de problemas» en general', () => {
+    expect(BAND_LEGENDS.gamma).toMatch(/insight/)
+    expect(BAND_LEGENDS.gamma).toMatch(/solución de un problema/)
+    expect(REFERENCE_INSIGHT.doi).toBe('https://doi.org/10.1371/journal.pbio.0020097')
+    const about = ABOUT.sections.flatMap((s) => s.paragraphs).join(' ')
+    expect(about).toMatch(/Jung-Beeman/)
+    expect(about).toMatch(/no demuestra que escuchar/)
   })
 })

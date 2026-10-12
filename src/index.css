@@ -603,3 +603,10 @@ input[type='number'] {
     padding-top: 32px;
   }
 }
+
+.band-legend {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}

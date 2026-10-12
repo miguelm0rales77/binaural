@@ -17,7 +17,7 @@ import {
   saveUserPresets,
   writeFlag,
 } from './storage'
-import { ISO_FAST_WARNING } from './texts'
+import { BAND_NOTE, ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
 import { ExportPanel } from './ui/ExportPanel'
@@ -297,6 +297,9 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
 
         <p className="band" data-band={band.id} data-testid="band">
           Banda: <strong>{band.name}</strong> <span>({band.range})</span>
+          <small className="band-legend" data-testid="band-legend">
+            {band.legend} {BAND_NOTE}
+          </small>
         </p>
         {isoFastWarning(params) && !isoSeen && (
           <div className="warning" role="alert">

@@ -1,4 +1,4 @@
-import { ABOUT, REFERENCE } from '../texts'
+import { ABOUT, REFERENCE, REFERENCE_INSIGHT } from '../texts'
 
 export function About() {
   return (
@@ -16,13 +16,15 @@ export function About() {
         </section>
       ))}
       <section>
-        <h2>Referencia</h2>
-        <p>
-          {REFERENCE.citation}{' '}
-          <a href={REFERENCE.doi} target="_blank" rel="noopener noreferrer">
-            DOI
-          </a>
-        </p>
+        <h2>Referencias</h2>
+        {[REFERENCE, REFERENCE_INSIGHT].map((r) => (
+          <p key={r.doi}>
+            {r.citation}{' '}
+            <a href={r.doi} target="_blank" rel="noopener noreferrer">
+              DOI
+            </a>
+          </p>
+        ))}
       </section>
     </main>
   )
