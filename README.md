@@ -111,6 +111,9 @@ una sesión: un cambio de versión no corta el audio.
 
 ## Iconos
 
+El dibujo original está en [`assets/icon-source.png`](assets/icon-source.png). El script genera de él las cuatro
+variantes (esquinas transparentes, maskable de Android al 80 %, iPhone a sangre y 192/512):
+
 ```bash
-python3 scripts/make-icons.py   # regenera public/icon-*.png y apple-touch-icon.png (Pillow)
+python3 scripts/make-icons.py   # regenera public/icon-*.png y apple-touch-icon.png (requiere Pillow)
 ```
