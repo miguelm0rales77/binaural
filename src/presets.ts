@@ -66,7 +66,7 @@ export const PRESETS: readonly Preset[] = [
   },
   {
     id: 'gamma-40',
-    name: 'Gamma 40 Hz',
+    name: 'Resolución de problemas (gamma)',
     params: { mode: 'isochronic', carrierHz: 400, beatHz: 40, isoDepth: 0.8, noiseType: 'none' },
     suggestedMinutes: 15,
   },
