@@ -29,7 +29,7 @@ describe('presets integrados', () => {
       'Concentración (beta)',
       'Meditación (theta)',
       'Pre-sueño (programa)',
-      'Resolución de problemas (gamma)',
+      'Reflexión (gamma)',
     ])
     const r = byId('relax-alpha')
     expect([r.params.mode, r.params.carrierHz, r.params.beatHz, r.params.noiseType, r.suggestedMinutes]).toEqual(['binaural', 250, 10, 'pink', 20])
