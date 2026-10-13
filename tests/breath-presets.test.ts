@@ -63,3 +63,13 @@ describe('mezcla de parámetros', () => {
     expect(m.breath.cues).toEqual({ swell: true, guideTone: true, chime: false })
   })
 })
+
+describe('precisión fina', () => {
+  it('acepta tiempos con décimas de segundo (p. ej. 4,3 s dentro y 5,7 s fuera)', () => {
+    const r = customPattern({ inhaleSec: 4.3, holdInSec: 0.5, exhaleSec: 5.7, holdOutSec: 0 })
+    if (!('pattern' in r)) throw new Error(r.error)
+    expect(r.pattern.rpm).toBeCloseTo(60 / 10.5, 10)
+    expect(r.pattern.inhaleRatio).toBeCloseTo(4.3 / 10, 10)
+    expect(r.pattern.holdInSec).toBe(0.5)
+  })
+})

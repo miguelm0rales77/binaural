@@ -170,7 +170,7 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
         inputMode="decimal"
         min={min}
         max={max}
-        step={1}
+        step={0.1}
         value={timing[key]}
         onChange={(e) => setTiming((t) => ({ ...t, [key]: Number(e.target.value) }))}
       />
@@ -240,10 +240,10 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
             ariaLabel="Respiraciones por minuto"
             min={RPM_RANGE.min}
             max={RPM_RANGE.max}
-            step={0.5}
+            step={0.1}
             value={pattern.rpm}
             format={(v) => `${fmt1(v)} rpm`}
-            onChange={(v) => setRpm(Math.round(v * 2) / 2)}
+            onChange={(v) => setRpm(Math.round(v * 10) / 10)}
           />
           <Slider
             label="Inspiración"

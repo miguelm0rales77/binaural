@@ -189,3 +189,8 @@
 - **Bucles sin respiración:** la exportación en bucle y el modo de segundo plano **no** incluyen la respiración (el bucle no cierra en ciclos enteros y se oiría un salto). La exportación de sesión sí la incluye. Pendiente de una fase posterior: ajustar el bucle a ciclos enteros, como pide §B3.
 - **Verificado en el navegador** (servidor de desarrollo, Chromium): el aviso aparece y se acepta; el círculo se mueve con la fase (escala 0,89 → 1 en la inspiración) y la cuenta atrás avanza; el resumen aparece al terminar; el editor da error con 1:10 y acepta 4-6 s; a 375 px no hay scroll horizontal.
 - **Sin verificar:** el sonido (no lo puedo oír), la sesión de 20 min completa, iPhone con la pantalla bloqueada (sin respiración en el modo de segundo plano, ver arriba) y la háptica en Android.
+
+## Fase 9 (ajuste) — precisión fina del ritmo y de los tiempos
+- **Ritmo de resonancia:** el deslizador pasa de pasos de 0,5 rpm a pasos de **0,1 rpm** (el plan decía 0,5). La frecuencia de resonancia individual no tiene por qué caer en un valor de medio punto.
+- **Editor personalizado:** los cuatro tiempos admiten **décimas de segundo** (paso 0,1 s). Sin cambios en los límites: inspiración y espiración de 1 a 20 s, retenciones de 0 a 10 s, ciclo de 5 a 20 s.
+- Comprobado en el navegador: el deslizador da 5,3 rpm (inspiración 4,5 s, espiración 6,8 s) y el editor aplica 4,3 s y 5,7 s sin error (ciclo de 10 s, 6,0 rpm). Test de `customPattern` con décimas en `tests/breath-presets.test.ts`.
