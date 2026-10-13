@@ -8,7 +8,7 @@ presets, temporizador, exportación a WAV y reproducción en segundo plano. **To
 - Detalle de todas las decisiones y por qué: **`DECISIONES.md`** (léelo antes de cambiar algo). `README.md` = uso y despliegue.
 
 ## Estado (fases 0–7 del plan original hechas, más extras)
-React 18 + TypeScript estricto + Vite + Vitest + `vite-plugin-pwa`. **168 tests**. Fases 0–7 completas y publicadas, y además:
+React 18 + TypeScript estricto + Vite + Vitest + `vite-plugin-pwa`. **178 tests**. Fases 0–8 del plan hechas (0–7 publicadas; la 8 en commit local, sin push), y además:
 sensibilidad sensorial (aviso TEA/hiperacusis), volúmenes de arranque bajos, techo de volumen 0,8, fondos sintetizados
 (naturaleza: lluvia, viento, tormenta con truenos, río, bosque; meditación: cuencos tibetanos y gong), estilo de marca
 Como Sentirse Bien (claro crema / oscuro verde bosque según el sistema), icono de auriculares con onda de batido.
@@ -38,13 +38,13 @@ Los tests de DSP renderizan minutos de audio: pueden tardar si la máquina está
 - Yo no puedo **oír** el audio: se verifica con medidas (espectro, nivel, envolventes) y en el navegador; el juicio sonoro es del usuario.
 
 ## Pendiente
-1. **Evolución de la app** con `PLAN-app-binaural.md` (respiración de resonancia, fractales; bloques A–D, fases 0–17). El usuario ya
-   pidió ejecutarlo fase a fase empezando por la 0, **pero el archivo del plan aún no está en el proyecto** (hay que pedirlo/colocarlo).
-   Ojo: el plan puede chocar con decisiones ya tomadas (stack, «fuera de alcance»…); reconciliar con el usuario al empezar.
-   Antes del Bloque D hay que preguntar la plataforma (iPhone o Android/escritorio).
-2. Códigos de activación **firmados** (nivel 2: Ed25519, clave privada fuera del repo) como «regalo» a suscriptores: aplazado.
-3. Elegir licencia del código (ahora «todos los derechos reservados»).
-4. Probar en iPhone (segundo plano con pantalla bloqueada), Safari y Firefox: nunca verificado.
-5. Escuchar el trueno nuevo (más corto, 4 oleadas, cola oscura) y el gong; ajustes previsibles listados en `DECISIONES.md`.
-6. Icono: se eligieron los auriculares; alternativa `python3 scripts/make-icons.py corazon`. Un cerebro lineal necesita dibujo a mano.
-7. Posible interruptor manual de tema claro/oscuro (hoy sigue el sistema).
+Decisiones tomadas en la revisión de pendientes (decidido por el usuario):
+- **Plan `docs/PLAN-app-binaural.md`** (copiado al repo): Fases 0 y 1 ya estaban hechas (commits `fase 0` y `fase 1`). Fase 8 hecha (reloj respiratorio, `src/dsp/breath.ts`). Siguiente: **Fase 9** (interfaz «Respirar», presets y sesiones), luego Fase 10, y después **Bloque C** (Fases 11–14, fractales). Ejecutar fase a fase con parada para revisión.
+- **Bloque D (biofeedback con sensor de pulso): no se realiza por ahora.** No preguntar la plataforma hasta que se retome.
+- Códigos de activación **firmados** (Ed25519): **aplazados**.
+- Licencia: **todos los derechos reservados** por ahora.
+- Tema: **sigue al sistema**, sin interruptor manual.
+
+Pendiente de verificación por el usuario (no se puede hacer desde aquí):
+- Probar en iPhone (segundo plano con pantalla bloqueada), Safari y Firefox: nunca verificado.
+- Escuchar el trueno nuevo y el gong; ajustes previsibles listados en `DECISIONES.md`.

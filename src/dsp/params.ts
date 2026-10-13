@@ -1,6 +1,8 @@
+import { sanitizeBreathPattern } from './breath'
 import {
   DEFAULT_PARAMS,
   type BeatMode,
+  type BreathSettings,
   type EngineParams,
   type MeditationType,
   type NatureType,
@@ -39,6 +41,23 @@ function num(v: unknown, fallback: number, key: NumericKey, max: number = RANGES
   return Math.max(RANGES[key].min, Math.min(max, x))
 }
 
+/** Valida los ajustes de respiración (interruptor, señales y patrón). */
+export function sanitizeBreath(base: BreathSettings, patch: unknown): BreathSettings {
+  const p = (patch && typeof patch === 'object' ? patch : {}) as Partial<Record<keyof BreathSettings, unknown>>
+  const c = (p.cues && typeof p.cues === 'object' ? p.cues : {}) as Record<string, unknown>
+  const bc = base.cues
+  return {
+    enabled: typeof p.enabled === 'boolean' ? p.enabled : base.enabled,
+    // Sin `pattern` en el parche se conserva el actual; con él, el patrón entero se valida de nuevo.
+    pattern: p.pattern === undefined ? base.pattern : sanitizeBreathPattern(p.pattern),
+    cues: {
+      swell: typeof c.swell === 'boolean' ? c.swell : bc.swell,
+      guideTone: typeof c.guideTone === 'boolean' ? c.guideTone : bc.guideTone,
+      chime: typeof c.chime === 'boolean' ? c.chime : bc.chime,
+    },
+  }
+}
+
 /**
  * Aplica `patch` sobre `base` recortando rangos y descartando valores inválidos (NaN, tipos erróneos).
  * `masterCeiling` es el techo del volumen general (por defecto MASTER_CEILING = 0,8).
@@ -59,6 +78,7 @@ export function sanitizeParams(
     toneGain: num(p.toneGain, base.toneGain, 'toneGain'),
     noiseGain: num(p.noiseGain, base.noiseGain, 'noiseGain'),
     masterGain: num(p.masterGain, base.masterGain, 'masterGain', masterCeiling),
+    breath: sanitizeBreath(base.breath, p.breath),
   }
 }
 

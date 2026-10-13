@@ -151,3 +151,26 @@
 - **Elegido: auriculares.** Es el más legible a cualquier tamaño (se reconoce hasta a 24 px) y el que mejor dice «binaural» (dos oídos). La onda central tiene una envolvente de tres lóbulos (un batido). Un primer intento con valor absoluto en la envolvente salía dentado y se rehízo con una envolvente lisa. `scripts/make-icons.py corazon` genera la alternativa.
 - **Archivos:** `icon-192/512` (esquinas transparentes), `icon-maskable-512` (arte al 80 %), `apple-touch-icon` (a sangre, sin transparencia) y `favicon.svg` (antes con las ondas azul y verde, fuera de la paleta). Se borró `assets/icon-source.png` (el cerebro de neón); sigue en el historial de git.
 - **Efecto:** el precacheo baja de ~963 KiB a ~459 KiB. Chrome sigue viendo la app como instalable sin errores de manifiesto.
+
+## Revisión de pendientes (plan de evolución)
+- **Fases 0 y 1 del plan:** ya estaban implementadas y commiteadas antes (`fase 0`, `fase 1`); se verificó que cumplen su aceptación (168 tests en verde, build y lint sin errores, `npm run dev` responde). No se tocó código.
+- **Bloque D (biofeedback con sensor de pulso): no se realiza por ahora.** Queda sin decidir la plataforma; no hace falta preguntarla hasta que se retome.
+- **Orden:** Bloque B (Fases 8–10, respiración) y después Bloque C (Fases 11–14, fractales). Una fase cada vez, con parada para revisión.
+- **Códigos firmados (Ed25519):** siguen aplazados.
+- **Licencia:** «todos los derechos reservados» hasta que se decida otra.
+- **Tema:** sigue al sistema; no se añade interruptor manual.
+
+## Fase 8 — Reloj respiratorio y señales sonoras (Bloque B)
+- **Reloj puro (`src/dsp/breath.ts`):** `breathState` / `breathStateInto` (sin reservar memoria). La frecuencia se integra en forma cerrada: con rampa, los ciclos se calculan con la inversa de la integral de rpm/60; nunca `t mod período`. Sin rampa, período fijo.
+- **Reloj del motor:** el tiempo es `elapsed` del motor (desde `start()`), el mismo en el worklet, la exportación y los tests. El `startAtCtxTime` del plan se deja para la Fase 9, que es donde hace falta enlazar con `ctx.currentTime`.
+- **Retenciones:** van dentro del ciclo. La proporción inspiración/espiración se aplica al tiempo que queda sin retenciones (T − retenciones). Las retenciones se recortan si ocupan más del 80 % del ciclo.
+- **Rampa, corrección al plan:** al bajar de 8 a 6 rpm, **cada ciclo se alarga** (de ~7,56 s a 10 s). El plan dice que «decrece», pero sus propias cifras (primer ciclo ~7,5 s, luego 10 s) describen un aumento. Se sigue la cifra. El primer ciclo mide 7,56 s (el plan dice «unos 7,5 s»).
+- **Patrón completo:** en `setParams` un `pattern` se valida entero: los campos ausentes toman valores neutros (sin rampa ni retenciones), no los del patrón anterior. Un `breath` parcial sin `pattern` conserva el patrón actual. Por eso el patrón por defecto (con rampa de 120 s) solo se usa cuando se pide.
+- **Oleaje:** el fondo sube de ×0,6 a ×1,0 con `lung`. El rosa y el marrón pasan por un filtro de un polo cuyo corte sube de 400 a 2500 Hz con `lung`. Si el fondo está en «ninguno», se usa ruido rosa a ×0,15 solo para el oleaje (no depende del volumen de ruido). El fondo de naturaleza solo recibe la modulación de volumen. `lung` se suaviza 30 ms para que cambiar de patrón no haga clic.
+- **Tono guía:** 220–330 Hz según `lung`, −18 dB (×0,126) respecto al tono. Pasa por la compensación de sonoridad de la portadora, así que sigue el volumen del tono.
+- **Campanilla:** 660 Hz al inspirar y al mantener tras inspirar; 440 Hz al espirar y al mantener tras espirar. Caída exponencial de 5/s (queda en ~0,3 % a 1,2 s), con fase a cero al empezar para que no haga clic. Se dispara en el instante exacto del cambio de fase, muestra a muestra.
+- **Desactivadas por defecto:** la respiración entera está apagada (`enabled: false`) y, dentro, solo el oleaje está activo (el plan marca solo el oleaje como «por defecto»). Con la respiración apagada el audio es el de antes (salvo redondeos de coma flotante por reordenar sumas).
+- **Medido (tests `tests/breath.test.ts`):** inspiración 4,000 s y espiración 6,000 s (±1 ms); `lung` sin saltos mayores de 1,35·10⁻⁵ por muestra; campanillas en el cambio de fase (±1 muestra); correlación RMS/`lung` del oleaje r = 0,94 (ventanas de 250 ms, pulmones del patrón de 6 rpm); retenciones con `lung` constante (1 o 0).
+- **Nota sobre los tests:** a 660 Hz y 48 kHz, las muestras caen exactamente en cero cada 400 muestras (11 semiperiodos = 400 muestras). Por eso el detector de notas exige ≥ 1 ms de silencio y no una sola muestra.
+- **Pendiente para fases siguientes:** (1) la exportación en bucle (§B3) debe durar un número entero de ciclos respiratorios y de ciclos del pulso; hoy `render.ts` no lo garantiza si la respiración está activa (no hay UI para activarla todavía, así que no afecta a lo que se usa). (2) La háptica (`navigator.vibrate`) y la pantalla «Respirar» son de la Fase 9.
+- **Sin oír:** como siempre, verificado con medidas, no con oídos. Hay que escuchar el oleaje, el tono guía y la campanilla, y confirmar que «con los ojos cerrados se puede seguir el ritmo» (criterio de aceptación de la fase).
