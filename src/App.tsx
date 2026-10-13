@@ -4,7 +4,9 @@ import { BackgroundPlayer, type BackgroundState } from './audio/BackgroundPlayer
 import { bandFor } from './bands'
 import type { BreathConfig, EngineParams, NoiseType, Preset, Program } from './dsp/types'
 import { MASTER_CEILING, NATURE_TYPES, RANGES, isNature, sanitizeParams } from './dsp/params'
-import { BREATH_PRESETS, describePattern } from './breathing'
+import { BREATH_PRESETS, DEFAULT_CUES, describePattern, makePattern } from './breathing'
+import { localDate, loadGoal, loadPractice, loadResonance, saveGoal, savePractice, saveResonance, type Goal, type PracticeEntry } from './practice'
+import { RESONANCE_STEPS, recommend, stepAt, type StepRating, type TestStep } from './resonance'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
@@ -23,6 +25,7 @@ import { BAND_NOTE, ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
 import { BreathPanel, type BreathSummaryData } from './ui/BreathPanel'
+import { PracticePanel, ResonanceTest } from './ui/PracticePanel'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
@@ -95,21 +98,70 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
   const [breathSafetySeen, setBreathSafetySeen] = useState(() => readFlag(BREATH_SAFETY_KEY))
   const [summary, setSummary] = useState<BreathSummaryData | null>(null)
-  // Datos de la sesión en curso, para el resumen al terminar (el callback de parada no ve el estado actual).
-  const session = useRef({ breath: false, rpm: 6, description: '', elapsedSec: 0 })
+  // Datos de la sesión en curso, para el resumen y el registro al terminar (el callback de parada no ve el estado actual).
+  const session = useRef({ breath: false, rpm: 6, description: '', elapsedSec: 0, preset: 'Libre' })
+  const [practice, setPractice] = useState<PracticeEntry[]>(loadPractice)
+  const [goal, setGoal] = useState<Goal>(loadGoal)
+  const [today, setToday] = useState(() => localDate(new Date()))
+  const [resonanceRpm, setResonanceRpm] = useState<number | null>(loadResonance)
+  const [test, setTest] = useState<{ phase: 'idle' | 'running' | 'done'; step: TestStep | null; ratings: StepRating[] }>({
+    phase: 'idle',
+    step: null,
+    ratings: [],
+  })
+  const testRef = useRef({ active: false, key: '' }) // la prueba «Mi frecuencia» la dirige el reloj del motor
+  const breathLabel = useRef<string | null>(null) // nombre del preset de respiración aplicado, para el registro
 
   useEffect(() => {
     const c = new AudioController()
+    // Avanza la prueba «Mi frecuencia» según el reloj del motor (no según React).
+    const advanceTest = (t: number) => {
+      const r = testRef.current
+      const step = stepAt(t)
+      const key = step.kind === 'done' ? 'done' : `${step.kind}-${step.index}`
+      if (key === r.key) return
+      r.key = key
+      if (step.kind === 'done') {
+        r.active = false
+        c.stop()
+        setParams((p) => ({ ...p, breath: { ...p.breath, enabled: false } }))
+        setTest((s) => ({ ...s, phase: 'done', step: null }))
+        return
+      }
+      const rpm = RESONANCE_STEPS[step.index] ?? 6
+      c.setParams({
+        breath:
+          step.kind === 'breath'
+            ? { enabled: true, pattern: makePattern(rpm, 0.4), cues: DEFAULT_CUES, maxSec: null }
+            : { enabled: false },
+      })
+      setTest((s) => {
+        const ratings = [...s.ratings]
+        if (step.kind === 'breath' && !ratings[step.index]) ratings[step.index] = { rpm, comfort: null, airHunger: null }
+        return { ...s, step, ratings }
+      })
+    }
     c.onState = (s) => {
       session.current.elapsedSec = s.elapsedSec
       setInfo(s)
+      if (testRef.current.active) advanceTest(s.elapsedSec)
     }
     c.onStopped = () => {
       setStatus('stopped')
       setInfo(null)
       const s = session.current
-      if (s.breath && s.elapsedSec >= 60) {
+      if (testRef.current.active) {
+        // Parada a mitad de la prueba: se conservan las puntuaciones que haya.
+        testRef.current.active = false
+        setTest((t) => ({ ...t, phase: t.ratings.some((r) => r.comfort !== null) ? 'done' : 'idle', step: null }))
+      } else if (s.breath && s.elapsedSec >= 60) {
+        const now = new Date()
+        setToday(localDate(now))
         setSummary({ minutes: s.elapsedSec / 60, rpm: s.rpm, description: s.description })
+        setPractice((list) => [
+          ...list,
+          { date: localDate(now), minutes: Math.round(s.elapsedSec / 6) / 10, rpm: s.rpm, preset: s.preset },
+        ])
       }
       s.breath = false
     }
@@ -133,6 +185,18 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   useEffect(() => {
     saveUserPresets(userPresets)
   }, [userPresets])
+
+  useEffect(() => {
+    savePractice(practice)
+  }, [practice])
+
+  useEffect(() => {
+    saveGoal(goal)
+  }, [goal])
+
+  useEffect(() => {
+    if (resonanceRpm !== null) saveResonance(resonanceRpm)
+  }, [resonanceRpm])
 
   const update = (patch: Partial<EngineParams>) => {
     setBgStale(true)
@@ -163,15 +227,21 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
 
   /** Cambia el metrónomo (fusiona el parche con el estado actual). */
   const updateBreath = (patch: Partial<BreathConfig>) => {
+    breathLabel.current = null
     update({ breath: { ...params.breath, ...patch } })
   }
 
-  /** Preset de respiración: fija patrón, señales, duración y, si lo tiene, el tipo de fondo. */
+  /**
+   * Preset de respiración: fija patrón, señales, duración y, si lo tiene, el tipo de fondo.
+   * «Resonancia 6» usa la frecuencia guardada en «Mi frecuencia», si existe.
+   */
   const applyBreathPreset = (id: string) => {
     const b = BREATH_PRESETS.find((x) => x.id === id)
     if (!b) return
+    const pattern = id === 'breath-resonance-6' && resonanceRpm !== null ? makePattern(resonanceRpm, 0.4, { ramp: true }) : b.pattern
+    breathLabel.current = b.name
     update({
-      breath: { ...params.breath, enabled: true, pattern: b.pattern, cues: b.cues, maxSec: null },
+      breath: { ...params.breath, enabled: true, pattern, cues: b.cues, maxSec: null },
       ...(b.noise ? { noiseType: b.noise } : {}),
     })
     changeTimer(b.minutes)
@@ -197,6 +267,30 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     controller.current?.setTimer(min === null ? null : min * 60)
   }
 
+  /** Arranca el motor con `next` y prepara el resumen y el registro de la sesión. */
+  const begin = async (next: EngineParams, prog: Program | null, timerSec: number | null, label: string, isTest: boolean) => {
+    const c = controller.current
+    if (!c) return
+    bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
+    setStatus('starting')
+    setError(null)
+    setSummary(null)
+    session.current = {
+      breath: next.breath.enabled && !isTest,
+      rpm: next.breath.pattern.rpm,
+      description: describePattern(next.breath.pattern),
+      elapsedSec: 0,
+      preset: label,
+    }
+    try {
+      await c.play(next, prog, timerSec)
+      setStatus('playing')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      setStatus('stopped')
+    }
+  }
+
   const toggle = async () => {
     const c = controller.current
     if (!c || !accepted) return
@@ -206,23 +300,34 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       return
     }
     if (status !== 'stopped') return
-    bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
-    setStatus('starting')
-    setError(null)
-    setSummary(null)
-    session.current = {
-      breath: params.breath.enabled,
-      rpm: params.breath.pattern.rpm,
-      description: describePattern(params.breath.pattern),
-      elapsedSec: 0,
+    const named = activeId ? ([...PRESETS, ...userPresets].find((x) => x.id === activeId)?.name ?? null) : null
+    await begin(params, program, timerMin === null ? null : timerMin * 60, named ?? breathLabel.current ?? 'Libre', false)
+  }
+
+  /** Prueba «Mi frecuencia»: 14 min guiados; la guía cambia de ritmo según el reloj del motor. */
+  const startTest = () => {
+    if (!accepted || status !== 'stopped') return
+    const next: EngineParams = {
+      ...params,
+      breath: { enabled: true, pattern: makePattern(RESONANCE_STEPS[0], 0.4), cues: DEFAULT_CUES, maxSec: null },
     }
-    try {
-      await c.play(params, program, timerMin === null ? null : timerMin * 60)
-      setStatus('playing')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-      setStatus('stopped')
-    }
+    testRef.current = { active: true, key: '' }
+    setTest({ phase: 'running', step: null, ratings: [] })
+    setParams(next)
+    setProgram(null)
+    setTimerMin(null)
+    setActiveId(null)
+    void begin(next, null, null, 'Mi frecuencia', true)
+  }
+
+  const rateStep = (index: number, patch: Partial<StepRating>) => {
+    setTest((t) => {
+      const cur = t.ratings[index]
+      if (!cur) return t
+      const ratings = [...t.ratings]
+      ratings[index] = { ...cur, ...patch }
+      return { ...t, ratings }
+    })
   }
 
   const startBackground = () => {
@@ -474,6 +579,25 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         }}
         summary={summary}
         onCloseSummary={() => setSummary(null)}
+      />
+
+      <PracticePanel entries={practice} goal={goal} onGoal={setGoal} today={today} />
+
+      <ResonanceTest
+        phase={test.phase}
+        step={test.step}
+        ratings={test.ratings}
+        recommended={recommend(test.ratings)}
+        saved={resonanceRpm}
+        disabled={!accepted || status !== 'stopped'}
+        onStart={startTest}
+        onStop={() => void toggle()}
+        onRate={rateStep}
+        onSave={(rpm) => {
+          setResonanceRpm(rpm)
+          setTest((t) => ({ ...t, phase: 'idle' }))
+        }}
+        onDismiss={() => setTest((t) => ({ ...t, phase: 'idle' }))}
       />
 
       <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />

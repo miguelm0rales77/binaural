@@ -111,3 +111,22 @@
 - **Primer uso de respiración:** el aviso de seguridad del plan (B4) se muestra una vez, hasta pulsar «Entendido» (`binaural:breath-safety:v1`).
 - **Comprobación:** tests de ritmo, segundos, cuenta atrás, presets y fusión de la rampa (`tests/breathing.test.ts`). Con Chromium headless (390 px): sin desbordamiento horizontal (scrollWidth = 390) y sin errores de consola.
 - **Pendiente manual:** sesión de 20 min en ordenador y en iPhone con la pantalla bloqueada (modo de segundo plano con señales).
+
+## Bloque B — Fase 10: registro de práctica y «Mi frecuencia»
+- **Registro:** `binaural:practice:v1` (localStorage, try/catch). Cada sesión de respiración de al menos 1 min guarda fecha local, minutos (un decimal), rpm y nombre del preset. Las pruebas de «Mi frecuencia» no se registran como práctica.
+- **Racha:** días seguidos con práctica terminando hoy; si hoy aún no hay, cuenta desde ayer.
+- **Objetivo:** 2 × 20 min al día por defecto, editable (1–10 sesiones, 1–120 min).
+- **CSV:** cabecera `fecha,minutos,rpm,preset`, coma como separador y punto decimal. Sin BOM.
+- **Sin notificaciones push**, como pide el plan.
+- **Prueba escalonada:** 6,5 → 6,0 → 5,5 → 5,0 → 4,5 rpm; 2 min con guía y 1 min de respiración libre entre escalones. Dura 14 min (el último escalón no tiene descanso). Los cambios de escalón los marca el reloj del motor (`stepAt`), no temporizadores de React.
+- **Puntuación:** comodidad 1–5 y falta de aire, anotadas durante el descanso que sigue a cada escalón. La recomendación es el escalón más cómodo; en empate, el que no dio falta de aire y luego el ritmo más alto. Sin sensor, es una aproximación por comodidad; el texto de la pantalla lo dice.
+- **Desvío menor:** el plan pide puntuar los cinco criterios de la Fase 16 (desfase, amplitud, LF…); aquí no hay sensor, así que se usan solo comodidad y falta de aire.
+- **Uso de la frecuencia:** «Resonancia 6» usa la frecuencia guardada si existe; si no, 6 rpm.
+- **Parada a mitad de prueba:** se muestran las puntuaciones que haya; si no hay ninguna, se descarta.
+- **Sanitizado:** los números fuera de rango se recortan (como en los parámetros), en vez de descartarse.
+- **Día actual:** se guarda en estado y se actualiza al terminar una sesión (evita leer la fecha durante el render).
+- **Pruebas:** `tests/practice.test.ts` (racha, semana, objetivo, CSV, saneado y recarga, escalones de la prueba, recomendación). Chromium headless (390 px): sin desbordamiento y sin errores de consola.
+- **Pendiente:** la sensación de la prueba y el registro se comprueban al usarlos; no tienen tests de interfaz.
+
+## Cierre del Bloque B
+Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
