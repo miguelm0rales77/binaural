@@ -50,15 +50,39 @@ export interface CustomTiming {
   holdOutSec: number
 }
 
-/** Límites del editor. El ciclo mínimo de 5 s (12 rpm) evita respirar de más; el resto no tiene límite médico. */
-export const CUSTOM_LIMITS = { breathSec: { min: 1, max: 60 }, holdSec: { min: 0, max: 10 }, cycleSec: { min: 5, max: 60 } }
+/** Límites técnicos del editor (siempre activos): que el motor pueda con los tiempos. */
+export const CUSTOM_LIMITS = { breathSec: { min: 1, max: 60 }, cycleSec: { max: 60 }, ratio: { min: 0.2, max: 0.8 } }
 
 /**
- * Convierte los tiempos del editor en un patrón. Devuelve el texto del error si los tiempos no sirven:
- * el ciclo completo debe durar entre 5 y 60 s (1–12 rpm) y la proporción inspiración/espiración entre 1:4 y 4:1.
+ * Limitaciones de seguridad (activas por defecto): ciclo mínimo de 5 s (12 rpm), que evita respirar de más
+ * (mareo, hormigueo), y retenciones de hasta 10 s, que pueden causar mareo o pérdida de conocimiento.
+ * Sin ellas, solo quedan los límites técnicos: ciclo mínimo de 2 s (dos tiempos de 1 s) y retenciones de hasta 60 s.
  */
-export function customPattern(t: CustomTiming): { pattern: BreathPattern } | { error: string } {
-  const { breathSec, holdSec } = CUSTOM_LIMITS
+export function safetyLimits(on: boolean): { minCycleSec: number; maxHoldSec: number } {
+  return on ? { minCycleSec: 5, maxHoldSec: 10 } : { minCycleSec: 2, maxHoldSec: 60 }
+}
+
+/** Ajusta un patrón a las limitaciones de seguridad (al volver a activarlas). */
+export function withinSafetyLimits(p: BreathPattern): BreathPattern {
+  const { minCycleSec, maxHoldSec } = safetyLimits(true)
+  const cycle = 60 / p.rpm
+  const rpm = cycle < minCycleSec ? 60 / minCycleSec : p.rpm
+  return {
+    ...p,
+    rpm,
+    holdInSec: Math.min(p.holdInSec, maxHoldSec),
+    holdOutSec: Math.min(p.holdOutSec, maxHoldSec),
+  }
+}
+
+/**
+ * Convierte los tiempos del editor en un patrón. Devuelve el texto del error si los tiempos no sirven.
+ * Con las limitaciones de seguridad activas, el ciclo mínimo es 5 s y las retenciones llegan hasta 10 s.
+ */
+export function customPattern(t: CustomTiming, safety = true): { pattern: BreathPattern } | { error: string } {
+  const { breathSec } = CUSTOM_LIMITS
+  const { minCycleSec, maxHoldSec } = safetyLimits(safety)
+  const holdSec = { min: 0, max: maxHoldSec }
   for (const [name, v] of [
     ['inspiración', t.inhaleSec],
     ['espiración', t.exhaleSec],
@@ -73,12 +97,14 @@ export function customPattern(t: CustomTiming): { pattern: BreathPattern } | { e
   }
   const breathing = t.inhaleSec + t.exhaleSec
   const cycle = breathing + t.holdInSec + t.holdOutSec
-  const { cycleSec } = CUSTOM_LIMITS
-  if (cycle < cycleSec.min || cycle > cycleSec.max) {
-    return { error: `El ciclo completo debe durar entre ${cycleSec.min} y ${cycleSec.max} s (ahora ${cycle} s).` }
+  const cycleMax = CUSTOM_LIMITS.cycleSec.max
+  if (cycle < minCycleSec || cycle > cycleMax) {
+    return { error: `El ciclo completo debe durar entre ${minCycleSec} y ${cycleMax} s (ahora ${cycle} s).` }
   }
   const ratio = t.inhaleSec / breathing
-  if (ratio < 0.2 || ratio > 0.8) return { error: 'La inspiración y la espiración deben estar entre 1:4 y 4:1.' }
+  if (ratio < CUSTOM_LIMITS.ratio.min || ratio > CUSTOM_LIMITS.ratio.max) {
+    return { error: 'La inspiración y la espiración deben estar entre 1:4 y 4:1.' }
+  }
   return {
     pattern: {
       rpm: 60 / cycle,

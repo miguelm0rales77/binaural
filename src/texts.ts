@@ -23,6 +23,7 @@ export const BREATH_TEXT = {
       'Si notas mareo, hormigueo o palpitaciones, vuelve a respirar de forma normal: suelen aparecer al respirar más de lo necesario.',
       'Si tienes una enfermedad cardíaca o respiratoria importante, consulta antes con tu médico.',
       'En algunas personas con trastorno de pánico, centrarse en la respiración puede aumentar la inquietud al principio. Si es tu caso, empieza con sesiones cortas.',
+      'No hagas estas respiraciones mientras haces actividades en las que perder el conocimiento podría ponerte en peligro: nadar o estar en el agua, conducir, manejar maquinaria o subir a una escalera.',
       'No es un producto sanitario ni sustituye a ningún tratamiento médico o psicológico.',
     ],
     button: 'Entendido',
@@ -33,6 +34,12 @@ export const BREATH_TEXT = {
   loopNote:
     'El modo de segundo plano y la exportación en bucle todavía no incluyen la respiración guiada.',
   lips: 'Espira despacio, con los labios fruncidos.',
+  /** Aviso al quitar las limitaciones de seguridad del editor. */
+  advanced:
+    'Sólo para respiradores avanzados. Sin estas limitaciones puedes elegir ciclos muy rápidos, con riesgo de respirar de más (mareo, hormigueo), o retenciones largas, con riesgo de mareo o pérdida de conocimiento. Al quitarlas asumes ese riesgo.',
+  /** Recordatorio permanente: nunca con retenciones en actividades peligrosas si se pierde el conocimiento. */
+  activities:
+    'No hagas estas respiraciones, sobre todo las retenciones, mientras haces actividades en las que perder el conocimiento podría ponerte en peligro: nadar o estar en el agua, conducir, manejar maquinaria o subir a una escalera.',
 } as const
 
 export const ISO_FAST_WARNING = {

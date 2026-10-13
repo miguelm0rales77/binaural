@@ -56,6 +56,7 @@ export function sanitizeBreath(base: BreathSettings, patch: unknown): BreathSett
       guideTone: typeof c.guideTone === 'boolean' ? c.guideTone : bc.guideTone,
       chime: typeof c.chime === 'boolean' ? c.chime : bc.chime,
     },
+    safetyLimits: typeof p.safetyLimits === 'boolean' ? p.safetyLimits : base.safetyLimits,
     stopAtSec:
       p.stopAtSec === null
         ? null

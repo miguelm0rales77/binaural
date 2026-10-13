@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { BREATH_PRESETS, CUSTOM_LIMITS, customPattern, describeBreath, type BreathPreset } from '../breathPresets'
+import {
+  BREATH_PRESETS,
+  CUSTOM_LIMITS,
+  customPattern,
+  describeBreath,
+  safetyLimits,
+  withinSafetyLimits,
+  type BreathPreset,
+} from '../breathPresets'
 import { breathStateInto, type BreathPattern, type BreathState } from '../dsp/breath'
 import type { BreathCues, BreathSettings, ParamsPatch } from '../dsp/types'
 import { BREATH_ACCEPTED_KEY, readFlag, writeFlag } from '../storage'
@@ -49,6 +57,7 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
   const [lips, setLips] = useState(false)
   const [timing, setTiming] = useState({ inhaleSec: 4, holdInSec: 0, exhaleSec: 6, holdOutSec: 0 })
   const [timingError, setTimingError] = useState<string | null>(null)
+  const [confirmOff, setConfirmOff] = useState(false)
 
   // Círculo y textos se actualizan en el bucle de dibujo, sin volver a pintar React en cada fotograma.
   const circle = useRef<HTMLDivElement>(null)
@@ -149,8 +158,17 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
   const setRamp = (on: boolean) => onChange({ breath: { pattern: { ...pattern, rampFromRpm: 8, rampSec: on ? 120 : 0 } } })
   const setCue = (k: keyof BreathCues, v: boolean) => onChange({ breath: { cues: { ...cues, [k]: v } } })
 
+  const safety = breath.safetyLimits
+  const limits = safetyLimits(safety)
+
+  /** Activar las limitaciones ajusta el patrón actual a ellas; quitarlas pide confirmación. */
+  const toggleSafety = (on: boolean) => {
+    if (on) onChange({ breath: { safetyLimits: true, pattern: withinSafetyLimits(pattern) } })
+    else setConfirmOff(true)
+  }
+
   const applyTiming = () => {
-    const r = customPattern(timing)
+    const r = customPattern(timing, safety)
     if ('error' in r) {
       setTimingError(r.error)
       return
@@ -266,14 +284,29 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
 
       {presetChoice === 'custom' && (
         <div className="breath-editor">
+          <label className="check">
+            <input type="checkbox" checked={safety} onChange={(e) => toggleSafety(e.target.checked)} />
+            <span>
+              Limitaciones de seguridad
+              <small>
+                Ciclo de al menos {limits.minCycleSec} s y retenciones de hasta {limits.maxHoldSec} s.
+              </small>
+            </span>
+          </label>
+          {!safety && (
+            <p className="warning" role="status">
+              <AlertIcon />
+              <span>{BREATH_TEXT.advanced}</span>
+            </p>
+          )}
           <p className="muted">
-            Tiempos de un ciclo en segundos. Ciclo entre {CUSTOM_LIMITS.cycleSec.min} y {CUSTOM_LIMITS.cycleSec.max} s.
+            Tiempos de un ciclo en segundos, con décimas. Ciclo entre {limits.minCycleSec} y {CUSTOM_LIMITS.cycleSec.max} s.
           </p>
           <div className="breath-num-row">
             {numField('inhaleSec', 'Inspira', CUSTOM_LIMITS.breathSec.min, CUSTOM_LIMITS.breathSec.max)}
-            {numField('holdInSec', 'Mantén tras inspirar', CUSTOM_LIMITS.holdSec.min, CUSTOM_LIMITS.holdSec.max)}
+            {numField('holdInSec', 'Mantén tras inspirar', 0, limits.maxHoldSec)}
             {numField('exhaleSec', 'Espira', CUSTOM_LIMITS.breathSec.min, CUSTOM_LIMITS.breathSec.max)}
-            {numField('holdOutSec', 'Mantén tras espirar', CUSTOM_LIMITS.holdSec.min, CUSTOM_LIMITS.holdSec.max)}
+            {numField('holdOutSec', 'Mantén tras espirar', 0, limits.maxHoldSec)}
           </div>
           <button type="button" className="secondary" onClick={applyTiming}>
             Aplicar estos tiempos
@@ -343,6 +376,7 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
         <p className="muted">La respiración se apagará a los {Math.round(stopAtSec / 60)} min con un fundido de 30 s.</p>
       )}
       <p className="muted">{BREATH_TEXT.notSensor}</p>
+      <p className="muted">{BREATH_TEXT.activities}</p>
       <p className="muted">{BREATH_TEXT.loopNote}</p>
 
       {summary && (
@@ -355,6 +389,28 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
           <button type="button" className="secondary" onClick={onCloseSummary}>
             Cerrar
           </button>
+        </div>
+      )}
+
+      {confirmOff && (
+        <div className="overlay">
+          <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="breath-advanced-title">
+            <h2 id="breath-advanced-title">Quitar las limitaciones de seguridad</h2>
+            <p>{BREATH_TEXT.advanced}</p>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setConfirmOff(false)
+                onChange({ breath: { safetyLimits: false } })
+              }}
+            >
+              Quitar, asumo el riesgo
+            </button>{' '}
+            <button type="button" className="play" onClick={() => setConfirmOff(false)}>
+              Mantener las limitaciones
+            </button>
+          </div>
         </div>
       )}
 

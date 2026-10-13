@@ -34,6 +34,7 @@ const breathCues = (cues: Partial<BreathSettings['cues']>, pattern: BreathPatter
   pattern,
   cues: { swell: false, guideTone: false, chime: false, ...cues },
   stopAtSec: null,
+  safetyLimits: true,
 })
 
 describe('1. duración de inspiración y espiración', () => {
@@ -214,7 +215,7 @@ describe('reloj y patrón', () => {
 
   it('sanitizeBreathPattern recorta rangos y descarta valores no numéricos (campos ausentes = neutros)', () => {
     const s = sanitizeBreathPattern({ rpm: 99, inhaleRatio: Number.NaN, holdInSec: -4, rampSec: 1e9 })
-    expect(s.rpm).toBe(12)
+    expect(s.rpm).toBe(30) // tope técnico del motor; las limitaciones de seguridad se aplican en el editor
     expect(s.inhaleRatio).toBe(0.4)
     expect(s.holdInSec).toBe(0)
     expect(s.rampSec).toBe(600)

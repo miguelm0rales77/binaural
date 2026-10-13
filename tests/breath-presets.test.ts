@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BREATH_PRESETS, RESONANCE_PATTERN, customPattern, describeBreath } from '../src/breathPresets'
+import { BREATH_PRESETS, RESONANCE_PATTERN, customPattern, describeBreath, withinSafetyLimits } from '../src/breathPresets'
 import { mergeParams } from '../src/dsp/params'
 import { DEFAULT_PARAMS } from '../src/dsp/types'
 
@@ -81,5 +81,29 @@ describe('límites del editor', () => {
     if (!('pattern' in r)) throw new Error(r.error)
     expect(r.pattern.rpm).toBeCloseTo(60 / 40, 10)
     expect(r.pattern.inhaleRatio).toBeCloseTo(0.25, 10)
+  })
+})
+
+describe('limitaciones de seguridad', () => {
+  it('activas: un ciclo de 3 s o una retención de 11 s se rechazan', () => {
+    expect('error' in customPattern({ inhaleSec: 1, holdInSec: 0, exhaleSec: 2, holdOutSec: 0 }, true)).toBe(true)
+    expect('error' in customPattern({ inhaleSec: 4, holdInSec: 11, exhaleSec: 4, holdOutSec: 0 }, true)).toBe(true)
+  })
+
+  it('quitadas: un ciclo de 3 s y una retención de 30 s son válidos', () => {
+    const fast = customPattern({ inhaleSec: 1, holdInSec: 0, exhaleSec: 2, holdOutSec: 0 }, false)
+    expect('pattern' in fast && fast.pattern.rpm).toBeCloseTo(20, 10)
+    const hold = customPattern({ inhaleSec: 4, holdInSec: 30, exhaleSec: 4, holdOutSec: 0 }, false)
+    expect('pattern' in hold).toBe(true)
+  })
+
+  it('quitadas, el ciclo mínimo técnico es de 2 s', () => {
+    expect('error' in customPattern({ inhaleSec: 1, holdInSec: 0, exhaleSec: 0.5, holdOutSec: 0 }, false)).toBe(true)
+  })
+
+  it('al volver a activarlas, el patrón se ajusta (ritmo ≤ 12 rpm, retenciones ≤ 10 s)', () => {
+    const p = withinSafetyLimits({ rpm: 20, inhaleRatio: 0.4, holdInSec: 30, holdOutSec: 4 })
+    expect(p.rpm).toBeCloseTo(12, 10)
+    expect([p.holdInSec, p.holdOutSec]).toEqual([10, 4])
   })
 })

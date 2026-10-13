@@ -200,3 +200,13 @@
 - **Qué se mantiene:** el ciclo mínimo de 5 s (12 rpm). Es el que evita respirar de más (mareo, hormigueo), que es el riesgo real que cita el plan.
 - **Qué cambia:** inspiración y espiración de 1 a **60 s**; ciclo de 5 a **60 s** (1–12 rpm, `sanitizeBreathPattern` acepta desde 1 rpm).
 - **Retenciones:** siguen en 0–10 s. Una retención larga puede causar mareo o pérdida de conocimiento, así que es el límite que se conserva.
+
+## Fase 9 (ajuste 3) — limitaciones de seguridad como interruptor
+- **Interruptor «Limitaciones de seguridad»** en el editor personalizado, **activado por defecto** (`breath.safetyLimits`, se guarda con el resto de la respiración).
+- **Qué limita (activo):** ciclo mínimo de 5 s (12 rpm), que evita respirar de más, y retenciones de hasta 10 s, que pueden causar mareo o pérdida de conocimiento.
+- **Qué queda siempre (técnico):** tiempos de 1 a 60 s, ciclo máximo de 60 s y proporción entre 1:4 y 4:1.
+- **Al quitarlo:** aparece un diálogo con el aviso «Sólo para respiradores avanzados» y dos botones: «Quitar, asumo el riesgo» y «Mantener las limitaciones». Sin limitaciones, el ciclo mínimo técnico es 2 s y las retenciones llegan a 60 s. Mientras están quitadas, un aviso fijo lo recuerda en el editor.
+- **Al volver a activarlo:** el patrón actual se ajusta sin confirmación (ritmo ≤ 12 rpm, retenciones ≤ 10 s).
+- **Motor:** no aplica estos límites. El tope técnico del motor pasa a 30 rpm y a 60 s por retención, para que el editor pueda ir sin limitaciones. Los límites de seguridad viven solo en el editor.
+- **Aviso de actividades (nuevo):** no hacer estas respiraciones, sobre todo las retenciones, mientras se hace una actividad en la que perder el conocimiento podría poner en peligro (nadar o estar en el agua, conducir, manejar maquinaria, subir a una escalera). Aparece en el diálogo de primer uso y como texto fijo en la sección.
+- **Verificado en el navegador:** al quitar la casilla aparece el diálogo; al confirmar, el aviso fijo y el máximo de retención pasan a 60 s; al volver a activarla, el máximo vuelve a 10 s.

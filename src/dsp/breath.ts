@@ -143,10 +143,10 @@ const clampNum = (v: unknown, fallback: number, lo: number, hi: number): number 
 export function sanitizeBreathPattern(patch: unknown): BreathPattern {
   const p = (patch && typeof patch === 'object' ? patch : {}) as Partial<Record<keyof BreathPattern, unknown>>
   return {
-    rpm: clampNum(p.rpm, 6, 1, 12),
+    rpm: clampNum(p.rpm, 6, 1, 30),
     inhaleRatio: clampNum(p.inhaleRatio, 0.4, 0.2, 0.8),
-    holdInSec: clampNum(p.holdInSec, 0, 0, 10),
-    holdOutSec: clampNum(p.holdOutSec, 0, 0, 10),
+    holdInSec: clampNum(p.holdInSec, 0, 0, 60),
+    holdOutSec: clampNum(p.holdOutSec, 0, 0, 60),
     rampFromRpm: clampNum(p.rampFromRpm, 8, 3, 12),
     rampSec: clampNum(p.rampSec, 0, 0, 600),
   }

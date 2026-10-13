@@ -23,6 +23,8 @@ export interface BreathSettings {
   cues: BreathCues
   /** Instante (s desde el inicio del motor) en el que la respiración se apaga con un fundido de 30 s; null = no se apaga. */
   stopAtSec: number | null
+  /** Limitaciones de seguridad del editor personalizado (ciclo ≥ 5 s, retenciones ≤ 10 s). Quitarlas es una decisión consciente. */
+  safetyLimits: boolean
 }
 
 export interface EngineParams {
@@ -79,5 +81,6 @@ export const DEFAULT_PARAMS: EngineParams = {
     pattern: DEFAULT_BREATH_PATTERN,
     cues: { swell: true, guideTone: false, chime: false },
     stopAtSec: null,
+    safetyLimits: true,
   },
 }
