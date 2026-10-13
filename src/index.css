@@ -610,3 +610,259 @@ input[type='number'] {
   color: var(--muted);
   font-size: 0.875rem;
 }
+
+/* Respiración guiada (Bloque B) */
+.breath {
+  margin-bottom: 8px;
+}
+
+.breath > h2 {
+  margin-top: 8px;
+}
+
+.breath-intro {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.breath-safety {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  background: #121722;
+}
+
+.breath-safety h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.breath-safety ul {
+  padding-left: 18px;
+  margin: 0 0 10px;
+  font-size: 0.9375rem;
+}
+
+.breath-stage {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.breath-circle {
+  width: min(64vw, 260px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* Un disco que solo cambia de tamaño: sin destellos ni cambios de color rápidos */
+.breath-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #2b5f63, #17363d 70%);
+  transform: scale(0.55);
+  will-change: transform;
+}
+
+.breath-label {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.breath-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-height: 1.2em;
+}
+
+.breath-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.breath-presets button[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.breath-custom,
+.breath-cues {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 14px 12px;
+  margin: 12px 0;
+}
+
+.breath-custom legend,
+.breath-cues legend {
+  padding: 0 6px;
+  color: var(--muted);
+}
+
+.breath-summary {
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.breath-summary p {
+  margin: 0 0 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breath-disc {
+    will-change: auto;
+  }
+}
+
+/* Vista fractal (Bloque C) */
+.visual-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+}
+
+.visual-canvas,
+.fractal-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Alternativa sin WebGL2: degradado lento que solo cambia de posición */
+.fractal-fallback {
+  background: radial-gradient(circle at 30% 40%, #2b5f63, #0f1218 60%), radial-gradient(circle at 70% 60%, #3a3f70, transparent 60%);
+  background-size: 200% 200%, 180% 180%;
+  animation: fallback-drift 60s ease-in-out infinite alternate;
+}
+
+@keyframes fallback-drift {
+  from { background-position: 0% 0%, 100% 100%; }
+  to { background-position: 100% 100%, 0% 0%; }
+}
+
+.visual-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.visual-bar button,
+.visual-controls button {
+  min-height: 44px;
+  padding: 0 14px;
+  background: rgba(15, 18, 24, 0.75);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.visual-bar button:disabled {
+  opacity: 0.5;
+}
+
+.visual-status {
+  color: var(--fg);
+  background: rgba(15, 18, 24, 0.75);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.visual-controls {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  max-height: 60vh;
+  overflow: auto;
+  background: rgba(15, 18, 24, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--fg);
+}
+
+.visual-controls summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.visual-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.visual-presets button[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Anillo que respira: solo cambia de tamaño y de posición, sin destellos */
+.breath-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(60vmin, 480px);
+  aspect-ratio: 1;
+  margin: calc(min(60vmin, 480px) / -2) 0 0 calc(min(60vmin, 480px) / -2);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fractal-fallback {
+    animation: none;
+  }
+}
+
+/* Aviso de primer uso de la vista fractal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-card {
+  max-width: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.modal-card button {
+  min-height: 44px;
+  padding: 0 16px;
+}

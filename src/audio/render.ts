@@ -2,6 +2,7 @@
  * Renderizado offline con el mismo `DspEngine` que suena en la app. TypeScript puro (sin APIs del
  * navegador): lo usa el Web Worker de exportación y se prueba en Node.
  */
+import { cyclePeriodSec } from '../dsp/breath'
 import { DspEngine } from '../dsp/engine'
 import { mulberry32 } from '../dsp/noise'
 import type { EngineParams, Program } from '../dsp/types'
@@ -79,6 +80,26 @@ export function quantizeForLoop(p: EngineParams, T: number): EngineParams {
   return { ...p, carrierHz: (lo + hi) / 2, beatHz: hi - lo }
 }
 
+/**
+ * Duración del bucle. Si el metrónomo suena, el bucle se ajusta a un número entero de ciclos
+ * respiratorios (el más cercano a `T`), para que el empalme no se note.
+ */
+export function loopSecondsFor(p: EngineParams, T: number = LOOP_SECONDS): number {
+  const br = p.breath
+  if (!br.enabled || !(br.cues.swell || br.cues.guideTone || br.cues.chime)) return T
+  const period = cyclePeriodSec(br.pattern)
+  return Math.max(1, Math.round(T / period)) * period
+}
+
+/**
+ * Parámetros del bucle: el patrón respiratorio no tiene rampa (no es periódica) y las señales no caducan,
+ * para que el bucle sea idéntico en cada repetición.
+ */
+function loopParams(p: EngineParams): EngineParams {
+  const { rampFromRpm: _f, rampSec: _s, ...pattern } = p.breath.pattern
+  return { ...p, breath: { ...p.breath, maxSec: null, pattern } }
+}
+
 function checkCancel(o: RenderOptions) {
   if (o.shouldCancel?.()) throw new Error('cancelled')
 }
@@ -132,11 +153,11 @@ function renderLoop(
   o: RenderOptions,
 ): RenderOutput {
   const fs = job.sampleRate ?? EXPORT_SAMPLE_RATE
-  const T = job.loopSec ?? LOOP_SECONDS
+  const T = loopSecondsFor(job.params, job.loopSec ?? LOOP_SECONDS)
   const N = Math.round(T * fs)
   const hasBg = job.params.noiseType !== 'none' && job.params.noiseGain > 0
   const X = hasBg ? Math.min(Math.round((job.crossfadeSec ?? CROSSFADE_SECONDS) * fs), Math.floor(N / 2)) : 0
-  const q = quantizeForLoop(job.params, T)
+  const q = quantizeForLoop(loopParams(job.params), T)
   const base = { fadeSec: 0, softClip: false }
   const bgRand = o.seed === undefined ? undefined : mulberry32(o.seed)
   const toneRand = o.seed === undefined ? undefined : mulberry32(o.seed + 1_000_003)

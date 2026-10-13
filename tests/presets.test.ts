@@ -46,7 +46,13 @@ describe('presets integrados', () => {
   it('todos tienen valores dentro de rango y no tocan los volúmenes', () => {
     for (const p of PRESETS) {
       const clean = sanitizeParams(defaultParams(), p.params)
-      for (const [k, v] of Object.entries(p.params)) expect(clean[k as keyof typeof clean], `${p.id}.${k}`).toBe(v)
+      for (const [k, v] of Object.entries(p.params)) {
+        if (k === 'breath') continue // parche parcial: se fusiona con el estado actual (ver más abajo)
+        expect(clean[k as keyof typeof clean], `${p.id}.${k}`).toBe(v)
+      }
+      if (p.params.breath) {
+        expect(clean.breath.enabled, `${p.id}.breath.enabled`).toBe(p.params.breath.enabled ?? clean.breath.enabled)
+      }
       expect(p.params).not.toHaveProperty('toneGain')
       expect(p.params).not.toHaveProperty('masterGain')
     }
@@ -60,8 +66,8 @@ describe('presets integrados', () => {
   })
 
   it('describePreset resume el preset', () => {
-    expect(describePreset(byId('relax-alpha'))).toBe('Binaural · 250 Hz · 10 Hz (Alfa) · ruido rosa · 20 min')
-    expect(describePreset(byId('pre-sleep'))).toBe('Binaural · 200 Hz · 10→6→3 Hz · ruido marrón · 30 min')
+    expect(describePreset(byId('relax-alpha'))).toBe('Binaural · 250 Hz · 10 Hz (Alfa) · ruido rosa · respiración 6 rpm · 20 min')
+    expect(describePreset(byId('pre-sleep'))).toBe('Binaural · 200 Hz · 10→6→3 Hz · ruido marrón · respiración 5.5 rpm · 30 min')
   })
 })
 

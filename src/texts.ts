@@ -82,3 +82,17 @@ export const ABOUT = {
     },
   ],
 } as const
+
+/** Respiración guiada. Describe el ritmo y lo que se siente; no promete ningún efecto. */
+export const BREATH_TEXTS = {
+  intro:
+    'Guía la respiración a un ritmo lento (por defecto, 6 respiraciones por minuto, con la espiración más larga). Se puede seguir con los ojos cerrados y combinar con cualquier preset de audio. Esta guía no mide tu pulso.',
+  safetyTitle: 'Antes de respirar con la guía',
+  safety: [
+    'Respira de forma suave y natural por la nariz, con el abdomen. No hagas respiraciones profundas forzadas.',
+    'Si notas mareo, hormigueo o palpitaciones (por exceso de ventilación), vuelve a respirar de forma normal.',
+    'Si tienes una enfermedad cardíaca o respiratoria importante, consulta antes con tu médico.',
+    'Si tienes trastorno de pánico, centrarte en la respiración puede aumentar la ansiedad al principio. En ese caso, empieza con sesiones cortas.',
+  ],
+  safetyButton: 'Entendido',
+} as const

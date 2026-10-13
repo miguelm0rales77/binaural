@@ -1,4 +1,4 @@
-import type { EngineParams, Program } from '../dsp/types'
+import type { EngineParams, ParamsPatch, Program } from '../dsp/types'
 import workletUrl from './engine.worklet.ts?worker&url'
 import { PROCESSOR_NAME, type FromWorklet, type ToWorklet } from './messages'
 
@@ -15,6 +15,10 @@ export class AudioController {
   private ctx: AudioContext | null = null
   private node: AudioWorkletNode | null = null
   private moduleLoaded = false
+  /** Tiempo del contexto en el que el motor empezó (reloj 0 de la sesión). */
+  private startCtx = 0
+  /** Instante del reloj de la sesión en el que la respiración vale fase 0 (lo informa el motor). */
+  private breathOriginSec = 0
 
   get isRunning(): boolean {
     return this.node !== null
@@ -52,8 +56,10 @@ export class AudioController {
       limiter.release.value = 0.25
       node.connect(master).connect(limiter).connect(ctx.destination)
       node.port.onmessage = (e: MessageEvent<FromWorklet>) => {
-        if (e.data.type === 'state') this.onState?.(e.data)
-        else this.onStopped?.()
+        if (e.data.type === 'state') {
+          this.breathOriginSec = e.data.breathOriginSec
+          this.onState?.(e.data)
+        } else this.onStopped?.()
       }
       this.node = node
     }
@@ -61,10 +67,20 @@ export class AudioController {
     this.send({ type: 'params', params })
     this.send({ type: 'program', program, startAtSec: 0 })
     this.send({ type: 'timer', sec: timerSec })
+    this.startCtx = ctx.currentTime
     this.send({ type: 'start' })
   }
 
-  setParams(params: Partial<EngineParams>): void {
+  /**
+   * Segundos desde la fase 0 de la respiración, según el reloj del contexto de audio. Lo usa la
+   * interfaz para dibujar el círculo. null si no hay contexto.
+   */
+  breathTimeSec(): number | null {
+    if (!this.ctx) return null
+    return this.ctx.currentTime - this.startCtx - this.breathOriginSec
+  }
+
+  setParams(params: ParamsPatch): void {
     this.send({ type: 'params', params })
   }
 

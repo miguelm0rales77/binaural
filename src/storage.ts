@@ -9,6 +9,8 @@ export const MAX_TIMER_MIN = 240
 export const ACCEPTED_KEY = 'binaural:accepted:v2'
 export const ISO_WARNING_KEY = 'binaural:iso-warning-seen:v1'
 export const PRESETS_KEY = 'binaural:presets:v1'
+export const BREATH_SAFETY_KEY = 'binaural:breath-safety:v1'
+export const VISUAL_WARNING_KEY = 'binaural:visual-warning:v1'
 export const MAX_USER_PRESETS = 50
 export const MAX_NAME_LENGTH = 40
 

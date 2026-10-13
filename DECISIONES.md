@@ -77,3 +77,137 @@
 - **Gamma y «resolución de problemas»:** la asociación existe pero es más acotada de lo que suele contarse. Verificado en PubMed: Jung-Beeman et al. (2004, *PLoS Biology*, doi:10.1371/journal.pbio.0020097) registraron con EEG una ráfaga de actividad gamma en el lóbulo temporal anterior derecho ~0,3 s **antes** de soluciones con *insight* («ajá»), no de la resolución de problemas en general. La leyenda dice «insight» y no «resolución de problemas», y «Acerca de» explica que eso describe lo que hace el cerebro por sí mismo y no demuestra que escuchar un pulso de esa frecuencia lo provoque.
 - **Qué no se cita:** las leyendas de delta/theta/alfa/beta son descripción de manual del EEG, sin referencia concreta; solo gamma-insight lleva cita.
 - **Nombre del preset gamma:** «Gamma 40 Hz» pasa a «Reflexión (gamma)» (a propuesta del usuario; antes se probó «Resolución de problemas (gamma)», descartado por ser una promesa más específica de lo que respalda la evidencia: solo el insight) para ser coherente con «Relajación (alfa)», «Concentración (beta)» y «Meditación (theta)», que ya llevaban etiqueta de uso. Es una etiqueta de uso, igual de «blanda» que las otras tres: no implica que el pulso produzca ese estado (véase «Acerca de»). El `id` interno sigue siendo `gamma-40`; el preset (isocrónico, 400 Hz, 40 Hz, D=0,8, 15 min) no cambia.
+
+## Bloque B — Fase 8: reloj respiratorio y señales sonoras
+- **Reloj puro:** `src/dsp/breath.ts` (`breathState`, `breathStateInto`) es función del tiempo. El motor usa `breathStateInto` (sin reservar memoria) en cada muestra; la interfaz y los tests usan la misma función.
+- **Integración de la rampa:** en lugar de integrar muestra a muestra, la fase es la integral en forma cerrada de rpm/60 (`cyclesAt`). Es equivalente y evita acumular error; no hay saltos al cambiar de ritmo.
+- **Retenciones:** se dan en segundos al ritmo actual. La parte respiratoria del ciclo es `1 − holdIn − holdOut` y se reparte según `inhaleRatio`. Con ritmo constante son exactas; con rampa varían suavemente. Las retenciones se limitan a 0,8 del ciclo.
+- **Desvío del plan (texto de la rampa):** el plan dice que «la duración de los ciclos decrece» al bajar de 8 a 6 rpm, pero sus propias cifras (7,5 s al principio, 10 s al final) indican lo contrario: la duración **crece** porque el ritmo baja. Se implementa el ritmo que baja y el test comprueba que cada ciclo dura más que el anterior.
+- **Rampa opcional:** solo hay rampa si el patrón trae `rampFromRpm`. Los valores por defecto (8 rpm, 120 s) los pondrá la interfaz en la Fase 9.
+- **Campanillas:** suenan al empezar cada fase (inspiración y retención de inspiración a 660 Hz; espiración y retención de espiración a 440 Hz). Seno más 0,3 de segundo armónico, ataque de 5 ms y caída de 60 dB en 1,2 s. Amplitud 0,2, escalada por el volumen del tono: así el bucle de exportación no duplica la campanilla al sumar sus dos motores.
+- **Tono guía:** de 220 a 330 Hz según el pulmón; −18 dB (×0,126) respecto al tono; también escalado por el volumen del tono.
+- **Oleaje:** ganancia del ruido ×(0,6 + 0,4·pulmón). Con rosa o marrón, además un paso bajo de un polo que sube de 400 a 2500 Hz con el pulmón. Con «sin ruido», rosa a ×0,4 del volumen de ruido, solo mientras suena el oleaje. Blanco y sonidos de la naturaleza solo cambian de ganancia.
+- **Suavizado:** el pulmón que usan las señales pasa por un one-pole de 50 ms (no `breathState`, que es exacto). Así los cambios de patrón no producen clics.
+- **Reloj del motor:** el origen del reloj se fija al empezar y se recoloca cuando se activa el metrónomo o cambia el patrón mientras suena. El motor informa de `breathOriginSec`; la interfaz mapeará su reloj de contexto con ese valor.
+- **Fundidos:** 0,5 s al activar o desactivar; 30 s cuando se cumple `maxSec` (Pre-sueño, Fase 9).
+- **Valores por defecto:** oleaje y campanilla activados, tono guía desactivado (según el plan).
+- **Exportación en bucle:** el bucle se ajusta a un número entero de ciclos (`loopSecondsFor`): 300 s a 6 rpm; a 5,5 rpm, 294,5 o 305,5 s según el redondeo. El patrón del bucle no tiene rampa y las señales no caducan, para que el bucle sea periódico. La rejilla de frecuencias del tono se cuantiza a esa duración.
+- **Estado:** el mensaje `state` del worklet incluye `breathOriginSec`.
+- **Rangos:** el motor acepta 3–12 rpm, `inhaleRatio` 0,2–0,8 y retenciones de 0–20 s; la interfaz usará los rangos del plan (4–7 rpm, 0,3–0,5).
+- **Pruebas:** `tests/breath.test.ts` (11 + 1 pruebas): duraciones 4,0 s y 6,0 s (±1 ms), continuidad del pulmón (<1e-3 por muestra a 48 kHz), rampa, retenciones, campanilla (±1 muestra), frecuencia del guía (330/220 Hz ±1 %), nivel −18 dB, correlación del oleaje (r > 0,9), silencio exacto sin oleaje, fundido de 30 s y longitud del bucle.
+- **Pendiente manual:** «con los ojos cerrados se puede seguir el ritmo solo con el oleaje» se comprobará al escuchar, no con tests.
+
+## Bloque B — Fase 9: interfaz de respiración, presets y sesiones
+- **Pantalla:** «Respirar» es una sección dentro de la misma pantalla de reproducción, no una ruta aparte. Así comparte un único motor de audio y un único estado con los presets de sonido.
+- **Círculo:** se actualiza en cada fotograma con refs (sin re-renderizar React). Lee el reloj del contexto de audio: `AudioController.breathTimeSec()` = tiempo del contexto − inicio − `breathOriginSec` (que informa el motor). Solo cambia de tamaño; sin destellos. Cuenta atrás con `phaseLengthSec`.
+- **Labios fruncidos:** solo es un texto durante la espiración (no se guarda).
+- **Rangos:** rpm en pasos de 0,5 entre 4,0 y 7,0; proporción 0,30–0,50 (el motor acepta más). Modo personalizado: segundos de inspiración, retención, espiración y retención; el ritmo sale del ciclo completo (`patternFromSeconds`), y 4-4-4-4 se puede montar, sin ser preset.
+- **Rampa:** casilla «Rampa de entrada» (8 → ritmo en 120 s). Se fusiona con cuidado: un parche que menciona la rampa manda sobre la del estado; si no la menciona, se conserva. Sin esto, un patrón parcial heredaba la rampa por defecto (bug encontrado en los tests).
+- **Valor por defecto:** el patrón es resonancia 6 con rampa, pero la guía viene desactivada; el usuario la activa.
+- **Presets de respiración:** «Resonancia 6» (20 min, con rampa), «Microdosis 3 min» (6 rpm sin rampa) y «Pre-sueño 5,5 rpm» (proporción 0,35, ruido marrón, sin campanilla). Cada uno fija el patrón, las señales y la duración del temporizador.
+- **Presets de sonido:** Relajación (alfa) y Pre-sueño llevan la respiración activada; el resto la apaga y conserva el patrón del usuario. Pre-sueño la limita a 10 min (`maxSec: 600`), con fundido de 30 s. Los presets sin respiración ponen `maxSec: null` para no heredar el límite de otro preset.
+- **Tipos:** los presets aceptan un parche parcial de respiración (`ParamsPatch`, `BreathPatch`); el motor y `sanitizeParams` lo fusionan.
+- **Resumen:** al terminar una sesión con respiración de al menos 1 min aparece el resumen (duración y rpm). El registro de práctica llega en la Fase 10.
+- **Primer uso de respiración:** el aviso de seguridad del plan (B4) se muestra una vez, hasta pulsar «Entendido» (`binaural:breath-safety:v1`).
+- **Comprobación:** tests de ritmo, segundos, cuenta atrás, presets y fusión de la rampa (`tests/breathing.test.ts`). Con Chromium headless (390 px): sin desbordamiento horizontal (scrollWidth = 390) y sin errores de consola.
+- **Pendiente manual:** sesión de 20 min en ordenador y en iPhone con la pantalla bloqueada (modo de segundo plano con señales).
+
+## Bloque B — Fase 10: registro de práctica y «Mi frecuencia»
+- **Registro:** `binaural:practice:v1` (localStorage, try/catch). Cada sesión de respiración de al menos 1 min guarda fecha local, minutos (un decimal), rpm y nombre del preset. Las pruebas de «Mi frecuencia» no se registran como práctica.
+- **Racha:** días seguidos con práctica terminando hoy; si hoy aún no hay, cuenta desde ayer.
+- **Objetivo:** 2 × 20 min al día por defecto, editable (1–10 sesiones, 1–120 min).
+- **CSV:** cabecera `fecha,minutos,rpm,preset`, coma como separador y punto decimal. Sin BOM.
+- **Sin notificaciones push**, como pide el plan.
+- **Prueba escalonada:** 6,5 → 6,0 → 5,5 → 5,0 → 4,5 rpm; 2 min con guía y 1 min de respiración libre entre escalones. Dura 14 min (el último escalón no tiene descanso). Los cambios de escalón los marca el reloj del motor (`stepAt`), no temporizadores de React.
+- **Puntuación:** comodidad 1–5 y falta de aire, anotadas durante el descanso que sigue a cada escalón. La recomendación es el escalón más cómodo; en empate, el que no dio falta de aire y luego el ritmo más alto. Sin sensor, es una aproximación por comodidad; el texto de la pantalla lo dice.
+- **Desvío menor:** el plan pide puntuar los cinco criterios de la Fase 16 (desfase, amplitud, LF…); aquí no hay sensor, así que se usan solo comodidad y falta de aire.
+- **Uso de la frecuencia:** «Resonancia 6» usa la frecuencia guardada si existe; si no, 6 rpm.
+- **Parada a mitad de prueba:** se muestran las puntuaciones que haya; si no hay ninguna, se descarta.
+- **Sanitizado:** los números fuera de rango se recortan (como en los parámetros), en vez de descartarse.
+- **Día actual:** se guarda en estado y se actualiza al terminar una sesión (evita leer la fecha durante el render).
+- **Pruebas:** `tests/practice.test.ts` (racha, semana, objetivo, CSV, saneado y recarga, escalones de la prueba, recomendación). Chromium headless (390 px): sin desbordamiento y sin errores de consola.
+- **Pendiente:** la sensación de la prueba y el registro se comprueban al usarlos; no tienen tests de interfaz.
+
+## Cierre del Bloque B
+Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
+
+## Bloque C — Fase 11: renderizador base WebGL2
+- **Un solo shader:** `fractal.frag.glsl` (fBm con domain warping, hash entero, ruido de gradiente con interpolación quíntica), cargado con `?raw`. Un triángulo a pantalla completa, sin librerías.
+- **Octavas:** 6 en escritorio, 5 en móvil. La calidad reducida baja una octava y escala a 0,45.
+- **Resolución:** min(devicePixelRatio, 1,5) × 0,6, según el plan.
+- **Tiempo del campo:** se acumula dt × velocidad, así cambiar la velocidad no salta la imagen.
+- **Pausa:** con la pestaña oculta no se dibuja nada; al volver, el bucle se reinicia sin saltos.
+- **Calidad:** si la media de dos segundos baja de 50 fps, se pasa a calidad reducida (una vez).
+- **Alternativa sin WebGL2:** degradado CSS lento que solo cambia de posición; se desactiva con `prefers-reduced-motion`.
+- **Comprobación:** Chromium headless (SwiftShader) compila el shader y dibuja sin errores; la captura muestra el campo con la paleta. Los 60 fps en portátil y 50 fps en iPhone son medidas manuales, pendientes.
+- **Nota de tipos:** `erasableSyntaxOnly` prohíbe las propiedades de parámetro, así que el canvas se guarda en un campo explícito.
+
+## Bloque C — Fase 12: presets visuales, controles y respiración
+- **Pantalla:** la vista fractal es una capa a pantalla completa dentro de la misma página (como «Respirar»), con la barra de audio (Reproducir/Detener) y «Salir» arriba.
+- **Reloj de la respiración:** con audio, el del contexto (`breathTimeSec`), así que el anillo sigue al de las campanillas. Sin audio, un reloj monotónico (`performance.now`) que empieza al abrir la vista; es solo visual, y el plan lo pide para «Respiración (sin audio)». No se usa `Date.now`.
+- **Anillo:** un círculo que crece y decrece con el pulmón (CSS, sin destellos). Solo aparece con la respiración activada.
+- **Presets visuales:** la tabla C4 completa. Cargar un preset de audio con el mismo id cambia también el visual.
+- **Interpolación:** los parámetros se acercan al objetivo con una constante de 1 s (≈95 % en 3 s). La paleta se interpola componente a componente. La semilla («Nueva forma») cambia de golpe, porque es una acción explícita.
+- **Controles:** H (0,40–0,90, más amplio que los presets), deformación (0–4), velocidad (0–2× con dt acumulado), brillo (con tope del 35 % en modo noche) y modo noche.
+- **Desvío:** la paleta no tiene selector propio: va con el preset visual, como en la tabla C4. Se añadirá si se pide.
+- **Prueba:** Chromium headless (SwiftShader): los controles, los seis presets y la barra de audio aparecen; el anillo queda oculto sin respiración; Esc y «Salir» cierran la vista; sin errores.
+- **Pendiente manual:** coincidencia de la respiración del fractal con las campanillas (<50 ms, grabando la pantalla).
+
+## Bloque C — Fase 13: seguridad visual
+- **Modulación del brillo:** el plan dice «como mucho un 6 %» y también pide que la oscilación total sea de 8 % como máximo. Con ±6 % la oscilación total sería 12 %, así que el brillo se modula ±3 % (oscilación total 6 %). Se cambió el shader y `cpuField.ts` a la vez.
+- **Copia en CPU** (`src/visual/cpuField.ts`): mismas fórmulas que el shader (hash entero, ruido quíntico, fBm, warp, paleta y brillo), con aritmética de 32 bits para el hash. Las diferencias con la GPU son de precisión (doble frente a float), no de fórmula.
+- **Prueba de destellos** (`tests/flicker.test.ts`): 64×64, 30 fps, 20 s, parámetros extremos (H = 0,40, deformación 4, velocidad 2, brillo 1, paleta de contraste alto) y respiración a 7 rpm. Resultado medido: el mayor cambio entre fotogramas consecutivos es 1,20 % (límite 2 %), y la oscilación total es 7,59 % (límite 8 %). El margen de la oscilación total es estrecho y se vigilará si se cambian parámetros.
+- **Límite de cambios bruscos:** ningún segundo tiene más de 3 saltos de más de un 2 %.
+- **Modo noche:** el brillo se limita al 35 % en `sanitizeVisual`. Probado.
+- **Movimiento reducido:** `motionScale` (×0,1) lo usa el componente. Probado como función.
+- **Aviso de fotosensibilidad:** se muestra la primera vez que se abre la vista (`binaural:visual-warning:v1`).
+- **Pendiente manual:** el parpadeo visual sobre un dispositivo real y el comportamiento con la respiración real (no se mide en la prueba con reloj simulado).
+
+## Bloque C — Fase 14: validación de la dimensión fractal (resuelta: 3 octavas)
+Medido con box-counting sobre campos de 1024×1024 (umbral en la mediana, contorno con vecindad 4, ε = 2…256, mínimo de 4 desplazamientos). Método sin cambios respecto al plan.
+
+| Configuración | D |
+|---|---|
+| Sin warp, 6 octavas, H 0,40 / 0,65 / 0,90 | 1,44 / 1,33 / 1,21 |
+| Warp 2,5, 6 octavas, H 0,40 / 0,65 / 0,90 | 1,92 / 1,79 / 1,62 |
+| Warp 2,5, 5 / 4 / 3 / 2 octavas, H 0,65 | 1,73 / 1,63 / 1,52 / 1,39 |
+| Warp 2,5, 3 octavas, H 0,40 / 0,65 / 0,90 | 1,60 / 1,52 / 1,44 |
+| Presets, 6 octavas (H, warp de la tabla C4) | 1,79–1,92 (fuera de 1,25–1,55) |
+| Presets, 3 octavas | relax 1,52 · enfoque 1,31 · meditación 1,61 · pre-sueño 1,41 · gamma 1,42 · respiración 1,52 |
+| Presets, 2 octavas | relax 1,39 · enfoque 1,20 · meditación 1,48 · pre-sueño 1,31 · gamma 1,31 · respiración 1,39 |
+
+**Lo que se sabe:**
+- Sin domain warping, D ≈ 2 − H (1,33 a H = 0,65), como predice la teoría. La monotonía D(0,4) > D(0,65) > D(0,9) se cumple con y sin warp.
+- El domain warping añade complejidad al contorno: con la deformación de los presets (1,5–3,0), D sale entre 1,8 y 1,9 con 6 octavas.
+- Subir H solo no basta: con deformación 2,5 y 6 octavas, H = 0,9 da 1,62.
+- Con el procedimiento del plan (ajustar H dentro de 0,5–0,7 y luego las octavas), no hay un valor de octavas que deje los seis presets dentro de 1,25–1,55: con 3 octavas falla meditación (1,61); con 2, falla enfoque (1,20).
+
+**Decisión pendiente** (no se ha cambiado nada del shader ni de los presets):
+1. Bajar la deformación de meditación (p. ej., de 3,0 a 2,0) y usar 3 octavas. Hay que medir el resultado.
+2. Mantener 6 octavas y registrar D ≈ 1,6–1,9 como dato real, sin cumplir el rango del plan.
+3. Otra combinación de octavas y deformación, que hay que medir.
+
+La prueba del rango por preset se ha quitado de `tests/boxcount.test.ts` para no dejarla en rojo; queda la de monotonía (D(0,40) > D(0,65) > D(0,90)), que pasa.
+
+### Decisión: 3 octavas (resuelve la Fase 14)
+Elegida por el usuario. Cambios:
+- **Octavas:** 3 en escritorio, móvil y en el valor por defecto del shader. Antes eran 6 y 5. La calidad reducida ya no baja las octavas (solo la escala), para que la medida de dimensión siga siendo válida.
+- **Meditación (theta):** warp de 3,0 a 2,0. Con 3 octavas y warp 3,0, D = 1,61; con warp 2,0, D = 1,44.
+- **Brillo del aliento:** de ±3 % a ±2 % (oscilación total 4 %). Con 3 octavas, la oscilación total de la prueba de destellos subió a 8,24 %, por encima del 8 % del plan. Con ±2 % queda por debajo. Shader y CPU cambiados a la vez.
+
+Dimensión fractal medida con 3 octavas (box-counting, H y deformación de la tabla C4):
+
+| Preset | H | Deformación | D |
+|---|---|---|---|
+| Relajación (alfa) | 0,65 | 2,5 | 1,52 |
+| Concentración (beta) | 0,70 | 1,5 | 1,31 |
+| Meditación (theta) | 0,60 | 2,0 | 1,44 |
+| Pre-sueño | 0,70 | 2,0 | 1,41 |
+| Gamma 40 Hz | 0,65 | 2,0 | 1,42 |
+| Respiración (sin audio) | 0,65 | 2,5 | 1,52 |
+
+Todos dentro de 1,25–1,55. La prueba `tests/boxcount.test.ts` lo comprueba, y también la monotonía D(0,40) > D(0,65) > D(0,90).
+
+**Consecuencias:**
+- Las imágenes y los GIF generados antes (6 octavas, Meditación con warp 3,0, brillo ±3 %) ya no coinciden con la app. Si se quiere ver cómo queda ahora, hay que volver a generarlos.
+- Hay menos detalle fino y el campo se ve más continuo. Es el coste de cumplir el rango del plan; no se ha medido en un dispositivo real.

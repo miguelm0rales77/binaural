@@ -1,8 +1,8 @@
-import type { EngineParams, Program } from '../dsp/types'
+import type { ParamsPatch, Program } from '../dsp/types'
 
 /** Mensajes del hilo principal al worklet. */
 export type ToWorklet =
-  | { type: 'params'; params: Partial<EngineParams> }
+  | { type: 'params'; params: ParamsPatch }
   | { type: 'start' }
   | { type: 'stop' }
   | { type: 'program'; program: Program | null; startAtSec: number }
@@ -10,7 +10,15 @@ export type ToWorklet =
 
 /** Mensajes del worklet al hilo principal. */
 export type FromWorklet =
-  | { type: 'state'; playing: boolean; elapsedSec: number; remainingSec: number | null; beatHz: number; carrierHz: number }
+  | {
+      type: 'state'
+      playing: boolean
+      elapsedSec: number
+      remainingSec: number | null
+      beatHz: number
+      carrierHz: number
+      breathOriginSec: number
+    }
   | { type: 'stopped' }
 
 export const PROCESSOR_NAME = 'binaural-processor'
