@@ -7,6 +7,7 @@ import {
   type MeditationType,
   type NatureType,
   type NoiseType,
+  type ParamsPatch,
 } from './types'
 
 export const MODES: readonly BeatMode[] = ['binaural', 'monaural', 'isochronic']
@@ -55,6 +56,12 @@ export function sanitizeBreath(base: BreathSettings, patch: unknown): BreathSett
       guideTone: typeof c.guideTone === 'boolean' ? c.guideTone : bc.guideTone,
       chime: typeof c.chime === 'boolean' ? c.chime : bc.chime,
     },
+    stopAtSec:
+      p.stopAtSec === null
+        ? null
+        : typeof p.stopAtSec === 'number' && Number.isFinite(p.stopAtSec)
+          ? Math.max(0, Math.min(86400, p.stopAtSec))
+          : base.stopAtSec,
   }
 }
 
@@ -83,3 +90,20 @@ export function sanitizeParams(
 }
 
 export const defaultParams = (): EngineParams => ({ ...DEFAULT_PARAMS })
+
+/** Aplica un parche sobre los parámetros actuales sin perder los campos anidados de `breath` (cues, pattern). */
+export function mergeParams(base: EngineParams, patch: ParamsPatch): EngineParams {
+  const b = patch.breath
+  return {
+    ...base,
+    ...patch,
+    breath: b
+      ? {
+          ...base.breath,
+          ...b,
+          cues: { ...base.breath.cues, ...b.cues },
+          pattern: { ...base.breath.pattern, ...b.pattern },
+        }
+      : base.breath,
+  }
+}

@@ -21,6 +21,8 @@ export interface BreathSettings {
   enabled: boolean
   pattern: BreathPattern
   cues: BreathCues
+  /** Instante (s desde el inicio del motor) en el que la respiración se apaga con un fundido de 30 s; null = no se apaga. */
+  stopAtSec: number | null
 }
 
 export interface EngineParams {
@@ -49,10 +51,13 @@ export interface Program {
   steps: ProgramStep[]
 }
 
+/** Parche de parámetros: cualquier subconjunto de EngineParams; `breath` también puede ir parcial (p. ej. solo `enabled`). */
+export type ParamsPatch = Omit<Partial<EngineParams>, 'breath'> & { breath?: Partial<BreathSettings> }
+
 export interface Preset {
   id: string
   name: string
-  params: Partial<EngineParams>
+  params: ParamsPatch
   program?: Program
   /** Duración sugerida en minutos (se usa como temporizador); null = sin límite. */
   suggestedMinutes: number | null
@@ -73,5 +78,6 @@ export const DEFAULT_PARAMS: EngineParams = {
     enabled: false,
     pattern: DEFAULT_BREATH_PATTERN,
     cues: { swell: true, guideTone: false, chime: false },
+    stopAtSec: null,
   },
 }

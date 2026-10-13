@@ -14,7 +14,7 @@ import { Oscillator, TWO_PI } from './oscillator'
 import { GENERATED_TYPES, MASTER_CEILING, sanitizeParams } from './params'
 import { evalProgram, type ProgramValue } from './program'
 import { Smoother } from './smoothing'
-import { DEFAULT_PARAMS, type EngineParams, type Program } from './types'
+import { DEFAULT_PARAMS, type EngineParams, type ParamsPatch, type Program } from './types'
 
 /** Muestras por paso de control (parámetros lentos: programa, temporizador, compensación). */
 const CONTROL_BLOCK = 128
@@ -40,6 +40,7 @@ const CHIME_DECAY = 5 // 1/s: la nota cae a ~0,3 % en 1,2 s
 const CHIME_FLOOR = 1e-4
 const CHIME_HIGH_HZ = 660 // al inspirar (y al mantener tras inspirar)
 const CHIME_LOW_HZ = 440 // al espirar (y al mantener tras espirar)
+const BREATH_FADE_SEC = 30 // fundido con el que la respiración se apaga en `stopAtSec` (Pre-sueño: a los 10 min)
 
 export interface EngineOptions {
   /** Fuente de aleatoriedad (inyectable para tests deterministas). */
@@ -108,9 +109,10 @@ export class DspEngine {
 
   // Respiración: pesos de las señales (0 o 1, suavizados) y estado del reloj.
   private breathOn = false
+  private breathStopAt: number | null = null
   private chimeOn = false
   private breathPattern: BreathPattern = DEFAULT_BREATH_PATTERN
-  private readonly breathNow: BreathState = { phase: 'in', phaseProgress: 0, lung: 0, cycleIndex: 0 }
+  private readonly breathNow: BreathState = { phase: 'in', phaseProgress: 0, phaseSec: 0, lung: 0, cycleIndex: 0 }
   private readonly lungSmooth: Smoother
   private readonly wSwell: Smoother
   private readonly wGuide: Smoother
@@ -132,7 +134,7 @@ export class DspEngine {
 
   readonly fs: number
 
-  constructor(fs: number, initial: Partial<EngineParams> = {}, opts: EngineOptions = {}) {
+  constructor(fs: number, initial: ParamsPatch = {}, opts: EngineOptions = {}) {
     this.fs = fs
     this.masterCeiling = opts.masterCeiling ?? MASTER_CEILING
     this.softClip = opts.softClip ?? true
@@ -177,6 +179,13 @@ export class DspEngine {
     for (const w of this.allWeights()) w.snap(w.target)
   }
 
+  /** Nivel de la respiración en el instante `at`: 1 hasta `stopAtSec` y después un fundido lineal de 30 s a 0. */
+  private breathLevel(at: number): number {
+    const stop = this.breathStopAt
+    if (stop === null) return 1
+    return clamp(1 - (at - stop) / BREATH_FADE_SEC, 0, 1)
+  }
+
   /** Arranca una nota de campanilla desde fase cero (empieza sin salto) y cae sola. */
   private startChime(hz: number): void {
     this.chimeEnv = 1
@@ -204,6 +213,7 @@ export class DspEngine {
   private applyBreath(): void {
     const b = this.params.breath
     this.breathOn = b.enabled
+    this.breathStopAt = b.stopAtSec
     this.chimeOn = b.enabled && b.cues.chime
     this.breathPattern = b.pattern
     // Sin respiración no hay fase que comparar: al volver a activarla, la primera fase vuelve a sonar.
@@ -235,7 +245,7 @@ export class DspEngine {
    * Cambia parámetros con suavizado. Si el usuario toca beatHz o carrierHz
    * mientras corre un programa, el programa se cancela.
    */
-  setParams(patch: Partial<EngineParams>): void {
+  setParams(patch: ParamsPatch): void {
     this.params = sanitizeParams(this.params, patch, this.masterCeiling)
     const p = this.params
     if (this.program && (patch.beatHz !== undefined || patch.carrierHz !== undefined)) {
@@ -380,12 +390,16 @@ export class DspEngine {
       }
 
       // Respiración: el reloj se evalúa muestra a muestra (la campanilla debe caer en el cambio de fase).
+      // `level` apaga las señales de respiración: 0 sin respiración, 1 mientras sigue y fundido tras `stopAtSec`.
+      let level = 0
       if (this.breathOn) {
-        const br = breathStateInto(this.breathNow, this.elapsed + (i - start) * this.invFs, this.breathPattern)
+        const at = this.elapsed + (i - start) * this.invFs
+        const br = breathStateInto(this.breathNow, at, this.breathPattern)
+        level = this.breathLevel(at)
         const id = br.cycleIndex * 4 + phaseIndex(br.phase)
         if (id !== this.lastPhaseId) {
           this.lastPhaseId = id
-          if (this.chimeOn) this.startChime(br.phase === 'in' || br.phase === 'holdIn' ? CHIME_HIGH_HZ : CHIME_LOW_HZ)
+          if (this.chimeOn && level > 0) this.startChime(br.phase === 'in' || br.phase === 'holdIn' ? CHIME_HIGH_HZ : CHIME_LOW_HZ)
         }
         this.lungSmooth.target = br.lung
       }
@@ -405,6 +419,7 @@ export class DspEngine {
       // Tono guía: sube de 220 a 330 Hz al inspirar y baja al espirar (−18 dB respecto al tono).
       const guide =
         this.wGuide.next() *
+        level *
         GUIDE_LEVEL *
         this.oscGuide.tick(TWO_PI * (GUIDE_MIN_HZ + (GUIDE_MAX_HZ - GUIDE_MIN_HZ) * lung) * this.invFs)
       const toneG = this.toneGain.next() * this.comp.next()
@@ -413,9 +428,9 @@ export class DspEngine {
 
       this.noise.next()
       const g = this.noiseGain.next()
-      const sw = this.wSwell.next()
+      const sw = this.wSwell.next() * level
       // Ruido rosa/marrón (y el rosa de respaldo del oleaje) pasa por un filtro de un polo cuyo corte sigue a los pulmones.
-      const fallback = this.wFallback.next() * SWELL_FALLBACK * this.noise.pink
+      const fallback = this.wFallback.next() * level * SWELL_FALLBACK * this.noise.pink
       const colored = (this.wPink.next() * this.noise.pink + this.wBrown.next() * this.noise.brown) * g + fallback
       const cut = SWELL_CUT_MIN_HZ + (SWELL_CUT_MAX_HZ - SWELL_CUT_MIN_HZ) * lung
       this.lpState += (1 - Math.exp(-TWO_PI * cut * this.invFs)) * (colored - this.lpState)

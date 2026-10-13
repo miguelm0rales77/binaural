@@ -1,4 +1,4 @@
-import type { EngineParams, Program } from '../dsp/types'
+import type { EngineParams, ParamsPatch, Program } from '../dsp/types'
 import workletUrl from './engine.worklet.ts?worker&url'
 import { PROCESSOR_NAME, type FromWorklet, type ToWorklet } from './messages'
 
@@ -15,6 +15,14 @@ export class AudioController {
   private ctx: AudioContext | null = null
   private node: AudioWorkletNode | null = null
   private moduleLoaded = false
+
+  /** Tiempo del contexto (s) en el que se pidió el arranque: la respiración de la interfaz se mide desde aquí. */
+  startedAt = 0
+
+  /** Tiempo actual del contexto de audio, o null si todavía no existe. */
+  get contextTime(): number | null {
+    return this.ctx ? this.ctx.currentTime : null
+  }
 
   get isRunning(): boolean {
     return this.node !== null
@@ -61,10 +69,11 @@ export class AudioController {
     this.send({ type: 'params', params })
     this.send({ type: 'program', program, startAtSec: 0 })
     this.send({ type: 'timer', sec: timerSec })
+    this.startedAt = ctx.currentTime
     this.send({ type: 'start' })
   }
 
-  setParams(params: Partial<EngineParams>): void {
+  setParams(params: ParamsPatch): void {
     this.send({ type: 'params', params })
   }
 

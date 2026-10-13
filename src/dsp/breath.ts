@@ -12,7 +12,7 @@ export type BreathPhase = 'in' | 'holdIn' | 'out' | 'holdOut'
 export interface BreathPattern {
   /** Respiraciones por minuto. Resonancia: 4,0–7,0; personalizado: 3–12. */
   rpm: number
-  /** Fracción del tiempo de respiración (sin retenciones) dedicada a inspirar. 0,3–0,5; por defecto 0,4. */
+  /** Fracción del tiempo de respiración (sin retenciones) dedicada a inspirar. 0,2–0,8; por defecto 0,4 (los controles de resonancia usan 0,3–0,5). */
   inhaleRatio: number
   holdInSec: number
   holdOutSec: number
@@ -26,6 +26,8 @@ export interface BreathState {
   phase: BreathPhase
   /** 0–1 dentro de la fase actual. */
   phaseProgress: number
+  /** Duración completa de la fase actual (s); con `phaseProgress` da la cuenta atrás. */
+  phaseSec: number
   /** Llenado pulmonar 0–1: 0 con los pulmones vacíos, 1 llenos. Continuo en todas las fases. */
   lung: number
   /** Número de ciclos completados desde el inicio (el primero es el 0). */
@@ -101,19 +103,23 @@ export function breathStateInto(out: BreathState, tSec: number, p: BreathPattern
     const x = tau / ti
     out.phase = 'in'
     out.phaseProgress = x
+    out.phaseSec = ti
     out.lung = 0.5 - 0.5 * Math.cos(Math.PI * x)
   } else if (tau < ti + hIn) {
     out.phase = 'holdIn'
     out.phaseProgress = (tau - ti) / hIn
+    out.phaseSec = hIn
     out.lung = 1
   } else if (tau < ti + hIn + te) {
     const x = (tau - ti - hIn) / te
     out.phase = 'out'
     out.phaseProgress = x
+    out.phaseSec = te
     out.lung = 0.5 + 0.5 * Math.cos(Math.PI * x)
   } else {
     out.phase = 'holdOut'
     out.phaseProgress = hOut > 0 ? Math.min(1, (tau - ti - hIn - te) / hOut) : 0
+    out.phaseSec = hOut
     out.lung = 0
   }
   return out
@@ -121,7 +127,7 @@ export function breathStateInto(out: BreathState, tSec: number, p: BreathPattern
 
 /** Versión que devuelve un objeto nuevo (para la interfaz y los tests). */
 export function breathState(tSec: number, p: BreathPattern): BreathState {
-  return breathStateInto({ phase: 'in', phaseProgress: 0, lung: 0, cycleIndex: 0 }, tSec, p)
+  return breathStateInto({ phase: 'in', phaseProgress: 0, phaseSec: 0, lung: 0, cycleIndex: 0 }, tSec, p)
 }
 
 const clampNum = (v: unknown, fallback: number, lo: number, hi: number): number => {
@@ -138,7 +144,7 @@ export function sanitizeBreathPattern(patch: unknown): BreathPattern {
   const p = (patch && typeof patch === 'object' ? patch : {}) as Partial<Record<keyof BreathPattern, unknown>>
   return {
     rpm: clampNum(p.rpm, 6, 3, 12),
-    inhaleRatio: clampNum(p.inhaleRatio, 0.4, 0.3, 0.5),
+    inhaleRatio: clampNum(p.inhaleRatio, 0.4, 0.2, 0.8),
     holdInSec: clampNum(p.holdInSec, 0, 0, 10),
     holdOutSec: clampNum(p.holdOutSec, 0, 0, 10),
     rampFromRpm: clampNum(p.rampFromRpm, 8, 3, 12),

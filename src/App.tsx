@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { AudioController, type StateInfo } from './audio/AudioController'
 import { BackgroundPlayer, type BackgroundState } from './audio/BackgroundPlayer'
 import { bandFor } from './bands'
-import type { EngineParams, NoiseType, Preset, Program } from './dsp/types'
-import { MASTER_CEILING, MEDITATION_TYPES, NATURE_TYPES, RANGES, isMeditation, isNature, sanitizeParams } from './dsp/params'
+import type { BreathPattern } from './dsp/breath'
+import type { EngineParams, NoiseType, ParamsPatch, Preset, Program } from './dsp/types'
+import { MASTER_CEILING, MEDITATION_TYPES, NATURE_TYPES, RANGES, isMeditation, isNature, mergeParams, sanitizeParams } from './dsp/params'
+import type { BreathPreset } from './breathPresets'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
@@ -20,6 +22,7 @@ import {
 import { BAND_NOTE, ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
+import { BreathPanel, type BreathSummary } from './ui/BreathPanel'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
@@ -91,13 +94,23 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [info, setInfo] = useState<StateInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
+  const [summary, setSummary] = useState<BreathSummary | null>(null)
+  // Patrón de la sesión en curso si la respiración estaba activa al empezar, y último tiempo informado por el motor.
+  const sessionBreath = useRef<BreathPattern | null>(null)
+  const lastElapsed = useRef(0)
 
   useEffect(() => {
     const c = new AudioController()
-    c.onState = setInfo
+    c.onState = (s) => {
+      lastElapsed.current = s.elapsedSec
+      setInfo(s)
+    }
     c.onStopped = () => {
       setStatus('stopped')
       setInfo(null)
+      const pattern = sessionBreath.current
+      sessionBreath.current = null
+      if (pattern && lastElapsed.current >= 5) setSummary({ elapsedSec: lastElapsed.current, pattern })
     }
     controller.current = c
     const b = new BackgroundPlayer()
@@ -120,9 +133,9 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     saveUserPresets(userPresets)
   }, [userPresets])
 
-  const update = (patch: Partial<EngineParams>) => {
+  const update = (patch: ParamsPatch) => {
     setBgStale(true)
-    setParams((p) => ({ ...p, ...patch }))
+    setParams((p) => mergeParams(p, patch))
     controller.current?.setParams(patch)
     // Tocar el pulso o la portadora a mano cancela el programa (igual que hace el motor).
     if (patch.beatHz !== undefined || patch.carrierHz !== undefined) setProgram(null)
@@ -160,6 +173,15 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     setActiveId((a) => (a === id ? null : a))
   }
 
+  /** Preset de respiración: fija el patrón, el ruido que acompaña al oleaje (si lo tiene) y la duración. */
+  const applyBreathPreset = (p: BreathPreset) => {
+    update({ breath: { enabled: true, pattern: p.pattern, stopAtSec: null }, ...(p.noise ?? {}) })
+    changeTimer(p.suggestedMinutes)
+  }
+
+  /** Reloj del motor para el círculo: tiempo actual del contexto y el instante en el que se pidió el arranque. */
+  const breathClock = () => ({ now: controller.current?.contextTime ?? null, startedAt: controller.current?.startedAt ?? 0 })
+
   const changeTimer = (min: number | null) => {
     setTimerMin(min)
     controller.current?.setTimer(min === null ? null : min * 60)
@@ -177,6 +199,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
     setStatus('starting')
     setError(null)
+    setSummary(null)
+    sessionBreath.current = params.breath.enabled ? params.breath.pattern : null
     try {
       await c.play(params, program, timerMin === null ? null : timerMin * 60)
       setStatus('playing')
@@ -194,8 +218,9 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     }
     setBgError(null)
     setBgStale(false)
+    // El bucle de 5 min no incluye la respiración: no cierra en ciclos enteros y se oiría un salto.
     bg.current
-      ?.start(params, program?.name ?? 'Binaural')
+      ?.start({ ...params, breath: { ...params.breath, enabled: false } }, program?.name ?? 'Binaural')
       .catch((e) => setBgError(e instanceof Error ? e.message : String(e)))
   }
 
@@ -445,6 +470,17 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
           <small>Cuenta desde que lo eliges. Al terminar, el sonido se apaga con un fundido de 8 s.</small>
         </div>
       </section>
+
+      <BreathPanel
+        breath={params.breath}
+        timerMin={timerMin}
+        clock={breathClock}
+        onChange={update}
+        onPreset={applyBreathPreset}
+        onTimer={changeTimer}
+        summary={summary}
+        onCloseSummary={() => setSummary(null)}
+      />
 
       <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />
 

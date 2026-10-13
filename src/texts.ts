@@ -13,6 +13,28 @@ export const FIRST_USE = {
   button: 'Entendido',
 } as const
 
+/** Respiración guiada (§B4 del plan). Solo describe cómo respirar; no promete ningún efecto. */
+export const BREATH_TEXT = {
+  safety: {
+    title: 'Antes de usar la respiración guiada',
+    intro: 'Respira de forma suave y natural. Lee estos avisos; solo aparecen la primera vez.',
+    items: [
+      'Respira de forma suave y natural, por la nariz y con el abdomen. No hagas respiraciones profundas forzadas.',
+      'Si notas mareo, hormigueo o palpitaciones, vuelve a respirar de forma normal: suelen aparecer al respirar más de lo necesario.',
+      'Si tienes una enfermedad cardíaca o respiratoria importante, consulta antes con tu médico.',
+      'En algunas personas con trastorno de pánico, centrarse en la respiración puede aumentar la inquietud al principio. Si es tu caso, empieza con sesiones cortas.',
+      'No es un producto sanitario ni sustituye a ningún tratamiento médico o psicológico.',
+    ],
+    button: 'Entendido',
+  },
+  /** Frase de cierre del panel: el biofeedback aún no existe, así que la guía es solo un ritmo. */
+  notSensor:
+    'Es un ritmo para guiar la respiración, no un biofeedback: la aplicación no mide tu pulso.',
+  loopNote:
+    'El modo de segundo plano y la exportación en bucle todavía no incluyen la respiración guiada.',
+  lips: 'Espira despacio, con los labios fruncidos.',
+} as const
+
 export const ISO_FAST_WARNING = {
   text: 'Los pulsos isocrónicos rápidos (13–40 Hz) se perciben como un parpadeo de volumen intenso. Empieza con volumen bajo y detén el sonido si notas molestias. Evítalos si tienes epilepsia o crisis desencadenadas por sonidos.',
   button: 'Entendido',

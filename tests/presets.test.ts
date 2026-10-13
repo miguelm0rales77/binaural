@@ -46,7 +46,11 @@ describe('presets integrados', () => {
   it('todos tienen valores dentro de rango y no tocan los volúmenes', () => {
     for (const p of PRESETS) {
       const clean = sanitizeParams(defaultParams(), p.params)
-      for (const [k, v] of Object.entries(p.params)) expect(clean[k as keyof typeof clean], `${p.id}.${k}`).toBe(v)
+      for (const [k, v] of Object.entries(p.params)) {
+        // la respiración es un objeto: se compara por contenido y solo en las claves que fija el preset
+        if (k === 'breath') expect(clean.breath, `${p.id}.breath`).toMatchObject(v as object)
+        else expect(clean[k as keyof typeof clean], `${p.id}.${k}`).toBe(v)
+      }
       expect(p.params).not.toHaveProperty('toneGain')
       expect(p.params).not.toHaveProperty('masterGain')
     }

@@ -11,7 +11,7 @@ import { sanitizeParams } from '../src/dsp/params'
 import { DEFAULT_PARAMS, type BreathSettings } from '../src/dsp/types'
 import { FS, render, seeded } from './helpers'
 
-const scratch: BreathState = { phase: 'in', phaseProgress: 0, lung: 0, cycleIndex: 0 }
+const scratch: BreathState = { phase: 'in', phaseProgress: 0, phaseSec: 0, lung: 0, cycleIndex: 0 }
 
 /** Tiempos (s) en los que empieza cada fase, a resolución de muestra. */
 function phaseStarts(p: BreathPattern, seconds: number) {
@@ -33,6 +33,7 @@ const breathCues = (cues: Partial<BreathSettings['cues']>, pattern: BreathPatter
   enabled,
   pattern,
   cues: { swell: false, guideTone: false, chime: false, ...cues },
+  stopAtSec: null,
 })
 
 describe('1. duración de inspiración y espiración', () => {
@@ -227,6 +228,66 @@ describe('reloj y patrón', () => {
     expect(s.breath.enabled).toBe(true)
     expect(s.breath.cues.swell).toBe(false)
     expect(s.breath.cues.chime).toBe(DEFAULT_PARAMS.breath.cues.chime) // valor no booleano: se queda el anterior
+  })
+})
+
+describe('7. fin de la respiración (fundido de 30 s)', () => {
+  it('tras el fundido, la salida es idéntica a la de una sesión sin respiración', () => {
+    const pattern: BreathPattern = { rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0 }
+    const make = (breathOn: boolean) =>
+      new DspEngine(
+        8000,
+        {
+          toneGain: 0,
+          noiseType: 'pink',
+          noiseGain: 1,
+          masterGain: 1,
+          loudnessComp: false,
+          breath: { enabled: breathOn, pattern, cues: { swell: true, guideTone: true, chime: true }, stopAtSec: 2 },
+        },
+        { fadeSec: 0, rand: seeded(21), masterCeiling: 1 },
+      )
+    const on = make(true)
+    const off = make(false)
+    on.start()
+    off.start()
+    const a = render(on, 45 * 8000).L
+    const b = render(off, 45 * 8000).L
+    // con el fundido terminado (2 s + 30 s) la respiración ya no suena: solo queda el fondo
+    const from = 33 * 8000
+    let maxDiff = 0
+    for (let i = from; i < a.length; i++) maxDiff = Math.max(maxDiff, Math.abs((a[i] as number) - (b[i] as number)))
+    console.log(`  diferencia máxima tras el fundido: ${maxDiff}`)
+    expect(maxDiff).toBe(0)
+  })
+
+  it('las campanillas dejan de sonar cuando la respiración ha terminado de apagarse', () => {
+    const pattern: BreathPattern = { rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0 }
+    const e = new DspEngine(
+      FS,
+      { toneGain: 0, noiseType: 'none', masterGain: 1, loudnessComp: false, breath: { enabled: true, pattern, cues: { swell: false, guideTone: false, chime: true }, stopAtSec: 1 } },
+      { fadeSec: 0, rand: seeded(5), masterCeiling: 1 },
+    )
+    e.start()
+    const { L } = render(e, 45 * FS)
+    const onsets: number[] = []
+    let quiet = 1e9
+    for (let i = 0; i < L.length; i++) {
+      if (Math.abs(L[i] as number) > 1e-6) {
+        if (quiet >= 48) onsets.push(i / FS)
+        quiet = 0
+      } else quiet++
+    }
+    console.log(`  campanillas (s): ${onsets.map((t) => t.toFixed(1)).join(', ')}`)
+    // cambios de fase cada 4 s y 6 s; con el fundido a 0 en 31 s no debe haber nada después
+    expect(onsets.length).toBeGreaterThan(3)
+    expect(onsets.every((t) => t <= 31.5)).toBe(true)
+  })
+})
+
+describe('8. patrón personalizado', () => {
+  it('sanitize no recorta una proporción de 0,25 (rango personalizado 0,2–0,8)', () => {
+    expect(sanitizeBreathPattern({ rpm: 6, inhaleRatio: 0.25 }).inhaleRatio).toBe(0.25)
   })
 })
 
