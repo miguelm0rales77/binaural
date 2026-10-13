@@ -725,3 +725,50 @@ input[type='number'] {
     will-change: auto;
   }
 }
+
+/* Vista fractal (Bloque C) */
+.visual-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+}
+
+.visual-canvas,
+.fractal-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Alternativa sin WebGL2: degradado lento que solo cambia de posición */
+.fractal-fallback {
+  background: radial-gradient(circle at 30% 40%, #2b5f63, #0f1218 60%), radial-gradient(circle at 70% 60%, #3a3f70, transparent 60%);
+  background-size: 200% 200%, 180% 180%;
+  animation: fallback-drift 60s ease-in-out infinite alternate;
+}
+
+@keyframes fallback-drift {
+  from { background-position: 0% 0%, 100% 100%; }
+  to { background-position: 100% 100%, 0% 0%; }
+}
+
+.visual-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-height: 44px;
+  padding: 0 14px;
+  background: rgba(15, 18, 24, 0.7);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fractal-fallback {
+    animation: none;
+  }
+}

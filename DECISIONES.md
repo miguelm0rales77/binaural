@@ -130,3 +130,14 @@
 
 ## Cierre del Bloque B
 Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
+
+## Bloque C — Fase 11: renderizador base WebGL2
+- **Un solo shader:** `fractal.frag.glsl` (fBm con domain warping, hash entero, ruido de gradiente con interpolación quíntica), cargado con `?raw`. Un triángulo a pantalla completa, sin librerías.
+- **Octavas:** 6 en escritorio, 5 en móvil. La calidad reducida baja una octava y escala a 0,45.
+- **Resolución:** min(devicePixelRatio, 1,5) × 0,6, según el plan.
+- **Tiempo del campo:** se acumula dt × velocidad, así cambiar la velocidad no salta la imagen.
+- **Pausa:** con la pestaña oculta no se dibuja nada; al volver, el bucle se reinicia sin saltos.
+- **Calidad:** si la media de dos segundos baja de 50 fps, se pasa a calidad reducida (una vez).
+- **Alternativa sin WebGL2:** degradado CSS lento que solo cambia de posición; se desactiva con `prefers-reduced-motion`.
+- **Comprobación:** Chromium headless (SwiftShader) compila el shader y dibuja sin errores; la captura muestra el campo con la paleta. Los 60 fps en portátil y 50 fps en iPhone son medidas manuales, pendientes.
+- **Nota de tipos:** `erasableSyntaxOnly` prohíbe las propiedades de parámetro, así que el canvas se guarda en un campo explícito.

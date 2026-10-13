@@ -26,6 +26,8 @@ import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
 import { BreathPanel, type BreathSummaryData } from './ui/BreathPanel'
 import { PracticePanel, ResonanceTest } from './ui/PracticePanel'
+import { VisualMode } from './ui/VisualMode'
+import { DEFAULT_VISUAL } from './visual/fractalParams'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
@@ -95,7 +97,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [bgStale, setBgStale] = useState(false)
   const [info, setInfo] = useState<StateInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
+  const [showViz, setShowViz] = useState(false)
+  const [visualOn, setVisualOn] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
   const [breathSafetySeen, setBreathSafetySeen] = useState(() => readFlag(BREATH_SAFETY_KEY))
   const [summary, setSummary] = useState<BreathSummaryData | null>(null)
   // Datos de la sesión en curso, para el resumen y el registro al terminar (el callback de parada no ve el estado actual).
@@ -404,6 +407,10 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
           </span>
         </label>
         {showViz && <Pulse mode={params.mode} beatHz={shownBeat} depth={params.isoDepth} active={live} />}
+        <button type="button" onClick={() => setVisualOn(true)}>
+          Vista fractal a pantalla completa
+        </button>
+        {visualOn && <VisualMode settings={DEFAULT_VISUAL} lungSource={() => null} onClose={() => setVisualOn(false)} />}
       </section>
 
       <PresetPicker
