@@ -378,7 +378,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
               Sonido generado por síntesis (no es una grabación): suena artificial.
               {params.noiseType === 'bowls'
                 ? ' Un cuenco suena cada 7–16 s, con entrada suave.'
-                : ' Un coro grave canta «Om» en ciclos de unos 15 s.'}{' '}
+                : ' Un gong profundo suena cada 18–34 s: crece despacio y se apaga muy lentamente.'}{' '}
               Es un fondo con tono: puede batir con la portadora; si molesta, cambia una de las dos.
             </small>
           )}

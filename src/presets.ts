@@ -19,7 +19,7 @@ export const NOISE_LABELS: Record<NoiseType, string> = {
   river: 'Río',
   forest: 'Bosque',
   bowls: 'Cuencos tibetanos',
-  om: 'Om (voz sintética)',
+  gong: 'Gong',
 }
 
 const MIN = 60

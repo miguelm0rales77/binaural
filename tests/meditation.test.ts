@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BowlsGen, OmGen } from '../src/dsp/meditation'
+import { BowlsGen, GONG_RATIOS, GongGen } from '../src/dsp/meditation'
 import { mulberry32 } from '../src/dsp/noise'
 import { isGenerated, isMeditation, isNature } from '../src/dsp/params'
 import { describePreset, NOISE_LABELS } from '../src/presets'
@@ -139,74 +139,75 @@ describe('cuencos tibetanos', () => {
   })
 })
 
-describe('«Om» coral', () => {
-  // jitter 0 → ciclos idénticos de 15 s: subida 0–1,8 · «o» hasta 6,8 · paso a «m» hasta 8,3 · «m» hasta 11,5 · bajada hasta 13,7 · respiración
-  const make = (seed = 4) => new OmGen(mulberry32(seed), FS, undefined, { jitter: 0 })
-  const x = render(make(), 16)
+describe('gong', () => {
+  const single = (level = 0.3, pitch = 110) =>
+    new GongGen(mulberry32(5), FS, level, { pitches: [pitch], firstStrikeSec: 0.2, minGapSec: 1000, maxGapSec: 1000 })
 
   it('es determinista, finito y dentro de ±1', () => {
-    expect(render(make(), 2)).toEqual(x.slice(0, 2 * FS))
-    expect(render(new OmGen(mulberry32(5), FS), 2)).not.toEqual(x.slice(0, 2 * FS))
-    expect(x.every(Number.isFinite)).toBe(true)
-    expect(peak(x)).toBeLessThanOrEqual(1)
+    const a = render(new GongGen(mulberry32(11), FS), 40)
+    expect(render(new GongGen(mulberry32(11), FS), 3)).toEqual(a.slice(0, 3 * FS))
+    expect(render(new GongGen(mulberry32(12), FS), 3)).not.toEqual(a.slice(0, 3 * FS))
+    expect(a.every(Number.isFinite)).toBe(true)
+    expect(peak(a)).toBeLessThanOrEqual(1)
   })
 
-  it('tiene un nivel parecido al del ruido rosa (RMS 0,12–0,30)', () => {
-    const gen = new OmGen(mulberry32(3), FS)
-    const y = render(gen, 60)
-    console.log(`  Om: pico = ${peak(y).toFixed(3)}`)
+  it('tiene un nivel parecido al del ruido rosa (RMS 0,10–0,30)', () => {
+    const y = render(new GongGen(mulberry32(3), FS), 120)
     const r = rms(y)
-    console.log(`  Om: RMS = ${r.toFixed(3)}`)
+    console.log(`  gong: RMS = ${r.toFixed(3)} · pico = ${peak(y).toFixed(3)}`)
     expect(r).toBeGreaterThan(0.1)
     expect(r).toBeLessThan(0.3)
   })
 
-  it('sigue el ciclo: sube despacio, se sostiene y hay una respiración en silencio', () => {
-    const o = sec(x, 3, 6)
-    const m = sec(x, 9, 11)
-    const gap = sec(x, 14.0, 14.6)
-    const start = sec(x, 0, 0.25)
-    console.log(`  RMS: inicio ${start.toFixed(3)} · «o» ${o.toFixed(3)} · «m» ${m.toFixed(3)} · respiración ${gap.toFixed(4)}`)
-    expect(o).toBeGreaterThan(0.1)
-    expect(m).toBeGreaterThan(0.08)
-    expect(gap).toBeLessThan(0.02 * o)
-    expect(m).toBeGreaterThan(0.4 * o) // la «m» suena, pero más suave que la «o»
-    expect(m).toBeLessThan(1.0 * o)
-    expect(start).toBeLessThan(0.2 * o)
+  it('es inarmónico: los parciales altos no caen en múltiplos enteros, y el espectro lo confirma', () => {
+    const devs = GONG_RATIOS.map((r) => Math.abs(r - Math.round(r)))
+    const upperMean = devs.slice(3).reduce((s, v) => s + v, 0) / devs.slice(3).length
+    console.log(`  desviación media de los parciales 4–14 respecto a enteros: ${upperMean.toFixed(2)} (0 = armónico, 0,25 = al azar)`)
+    expect(upperMean).toBeGreaterThan(0.15)
+    expect(GONG_RATIOS.every((r, i) => i === 0 || r > (GONG_RATIOS[i - 1] as number))).toBe(true)
+
+    // en el audio: allí donde un parcial se aleja ≥ 0,25 de un entero, hay más energía en su frecuencia real
+    // que en el armónico entero más cercano
+    const x = render(single(), 8)
+    const at = (f: number) => bandPower(x, 2.5, f * 0.99, f * 1.01)
+    const far = GONG_RATIOS.map((r, i) => ({ r, i })).filter(({ r, i }) => i > 0 && Math.abs(r - Math.round(r)) >= 0.25 && r * 110 < 3500)
+    expect(far.length).toBeGreaterThanOrEqual(2)
+    for (const { r } of far) expect(at(110 * r)).toBeGreaterThan(3 * at(110 * Math.round(r)))
+    // grave, pero con muchos parciales: energía por encima de 1 kHz y fundamental presente
+    const total = bandPower(x, 2.5, 60, 4000)
+    expect(bandPower(x, 2.5, 1000, 4000) / total).toBeGreaterThan(0.005)
+    expect(bandPower(x, 2.5, 100, 125) / total).toBeGreaterThan(0.01)
   })
 
-  it('no tiene subidas bruscas (la subida dura ~1,8 s), con varias semillas', () => {
-    const rises = [1, 2, 3, 4].map((seed) => maxRiseFraction(render(new OmGen(mulberry32(seed), FS), 45)))
+  it('«florece» tras el golpe: los agudos tardan más en aparecer que los graves', () => {
+    const x = render(single(), 10)
+    const hi = (t: number) => bandPower(x, 0.2 + t, 700, 3500, 16384)
+    const lo = (t: number) => bandPower(x, 0.2 + t, 60, 400, 16384)
+    const hiEarly = hi(0.1)
+    const hiBloom = hi(2.0)
+    console.log(`  agudos (700–3500 Hz): al golpe ${hiEarly.toExponential(1)} → a los 2 s ${hiBloom.toExponential(1)} · graves al golpe ${lo(0.1).toExponential(1)} → 2 s ${lo(2.0).toExponential(1)}`)
+    expect(hiBloom).toBeGreaterThan(3 * hiEarly)
+    expect(lo(2.0)).toBeGreaterThan(lo(0.1))
+  })
+
+  it('suena mucho tiempo y se apaga despacio', () => {
+    const x = render(single(0.2), 40)
+    const a = sec(x, 2, 4)
+    expect(sec(x, 12, 14)).toBeGreaterThan(0.25 * a) // a los 12 s aún suena con fuerza
+    expect(sec(x, 30, 32)).toBeLessThan(0.3 * a) // y a los 30 s ya se ha apagado bastante
+    expect(sec(x, 30, 32)).toBeGreaterThan(0) // pero no de golpe
+  })
+
+  it('ninguna subida a 100 ms supera el 35 % del máximo, con varias semillas', () => {
+    const rises = [1, 2, 3, 4].map((seed) => maxRiseFraction(render(new GongGen(mulberry32(seed), FS), 70)))
     console.log(`  subida máxima a 100 ms por semilla: ${rises.map((r) => (r * 100).toFixed(0) + ' %').join(', ')}`)
     for (const r of rises) expect(r).toBeLessThan(0.35)
-  })
-
-  it('es una voz grave con armónicos de ~110 Hz', () => {
-    // energía en bandas de ±5 % alrededor de k·110 Hz (k = 1–4) frente a todo el rango 80–500 Hz
-    const total = bandPower(x, 3.3, 80, 500)
-    let harmonic = 0
-    for (let k = 1; k <= 4; k++) harmonic += bandPower(x, 3.3, k * 110 * 0.95, k * 110 * 1.05)
-    console.log(`  fracción de energía en los armónicos de 110 Hz: ${(100 * harmonic / total).toFixed(1)} %`)
-    expect(harmonic / total).toBeGreaterThan(0.6)
-    // y la fundamental es de verdad ~110 Hz (no 220): hay energía en 100–120 Hz y ninguna por debajo de 95 Hz
-    expect(bandPower(x, 3.3, 100, 120) / total).toBeGreaterThan(0.01)
-    expect(bandPower(x, 3.3, 60, 95) / total).toBeLessThan(0.001)
-  })
-
-  it('los formantes pasan de «o» a «m»: la «m» concentra la energía en los graves', () => {
-    const lowFrac = (from: number) => bandPower(x, from, 0, 400) / bandPower(x, from, 0, 4000)
-    const midFrac = (from: number) => bandPower(x, from, 650, 1200) / bandPower(x, from, 0, 4000)
-    const o = { low: lowFrac(3.3), mid: midFrac(3.3) }
-    const m = { low: lowFrac(9.3), mid: midFrac(9.3) }
-    console.log(`  «o»: <400 Hz ${(o.low * 100).toFixed(0)} %, 650–1200 Hz ${(o.mid * 100).toFixed(0)} % · «m»: <400 Hz ${(m.low * 100).toFixed(0)} %, 650–1200 Hz ${(m.mid * 100).toFixed(0)} %`)
-    expect(m.low).toBeGreaterThan(o.low)
-    expect(o.mid).toBeGreaterThan(2 * m.mid)
   })
 })
 
 describe('integración en parámetros y textos', () => {
   it('se reconocen como fondos de meditación y generados, no como naturaleza', () => {
-    for (const t of ['bowls', 'om'] as const) {
+    for (const t of ['bowls', 'gong'] as const) {
       expect(isMeditation(t)).toBe(true)
       expect(isGenerated(t)).toBe(true)
       expect(isNature(t)).toBe(false)
@@ -216,7 +217,7 @@ describe('integración en parámetros y textos', () => {
   })
   it('etiquetas y descripción de presets', () => {
     expect(NOISE_LABELS.bowls).toBe('Cuencos tibetanos')
-    expect(NOISE_LABELS.om).toBe('Om (voz sintética)')
+    expect(NOISE_LABELS.gong).toBe('Gong')
     const p = (noiseType: 'bowls' | 'pink') => describePreset({ id: 'x', name: 'x', params: { noiseType }, suggestedMinutes: null })
     expect(p('bowls')).toContain('cuencos tibetanos')
     expect(p('bowls')).not.toContain('ruido')

@@ -166,7 +166,7 @@ describe('truenos suaves', () => {
 
 describe('integración en el motor y en los parámetros', () => {
   it('todos los fondos están registrados y se aceptan; uno desconocido se rechaza', () => {
-    expect(NOISE_TYPES).toEqual(['none', 'white', 'pink', 'brown', 'rain', 'wind', 'storm', 'river', 'forest', 'bowls', 'om'])
+    expect(NOISE_TYPES).toEqual(['none', 'white', 'pink', 'brown', 'rain', 'wind', 'storm', 'river', 'forest', 'bowls', 'gong'])
     expect(GENERATED_TYPES).toEqual([...NATURE_TYPES, ...MEDITATION_TYPES])
     for (const t of NOISE_TYPES) expect(sanitizeParams(defaultParams(), { noiseType: t }).noiseType).toBe(t)
     expect(sanitizeParams(defaultParams(), { noiseType: 'trueno' }).noiseType).toBe(DEFAULT_PARAMS.noiseType)

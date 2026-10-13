@@ -1,10 +1,10 @@
 /**
- * Sonidos de meditación por síntesis (sin grabaciones): cuencos tibetanos y un «Om» coral.
+ * Sonidos de meditación por síntesis (sin grabaciones): cuencos tibetanos y gong.
  * Igual que los de la naturaleza: mono, sin reservar memoria en `next()`, deterministas con `rand`
- * inyectable y sin picos repentinos (los golpes de cuenco entran en 300–600 ms; el «Om» sube en ~1,8 s).
- * Suenan artificiales: no son grabaciones.
+ * inyectable y sin picos repentinos (los golpes entran en 300–600 ms los cuencos y en ~0,3–1,4 s cada
+ * parcial del gong). Suenan artificiales: no son grabaciones.
  */
-import { BandPass, LP, SlowRandom, type NatureGen } from './nature'
+import { BandPass, noise, type NatureGen } from './nature'
 import { TWO_PI } from './oscillator'
 
 type Rand = () => number
@@ -122,144 +122,152 @@ export class BowlsGen implements NatureGen {
   }
 }
 
-// ───────────────────────────── «Om» coral ─────────────────────────────
+// ──────────────────────────────── Gong ────────────────────────────────
 
-const OM_VOICES = 5
-/** Desafinado de cada voz en cents: casi al unísono, como un canto monástico, pero nunca idéntico. */
-const CENTS = [0, 5, -6, 9, -8]
-/** Pequeño desfase de cada voz respecto al inicio del ciclo (s). */
-const OFFSETS = [0, 0.18, -0.22, 0.3, -0.12]
-/** Duración (s) de cada tramo del ciclo: subida, «o» sostenida, paso a «m», «m» sostenida, bajada, respiración. */
-const SEGMENTS = [1.8, 5.0, 1.5, 3.2, 2.2, 1.3]
+const GONG_VOICES = 2
+const GONG_PARTIALS = 14
+/** Fundamentales graves (Fa2 Sol2 La2 Do3): un gong grande y profundo. */
+const GONG_PITCHES = [87.31, 98.0, 110.0, 130.81]
 
-export interface OmOptions {
-  /** Altura base (Hz). Por defecto 110 (La2), una voz grave de coro. */
-  f0?: number
-  /** Variación aleatoria de la duración de cada ciclo (0 = ciclos idénticos). Por defecto 0,12. */
-  jitter?: number
+/** Razones de frecuencia de los parciales: densas e inarmónicas (crecen más deprisa que un múltiplo entero). */
+export const GONG_RATIOS = (() => {
+  const r = Array.from({ length: GONG_PARTIALS }, (_, i) => Math.pow(i + 1, 1.28) + 0.21 * Math.sin(2.7 * (i + 1)))
+  return r.map((v) => v / (r[0] as number))
+})()
+const GONG_AMP = Array.from(
+  { length: GONG_PARTIALS },
+  (_, i) => Math.pow(i + 1, -0.8) * (1 + 0.3 * Math.sin(1.9 * (i + 1) + 1)),
+)
+/** Decaimiento (s): el grave suena ~26 s; los agudos se apagan antes. */
+const GONG_TAU = Array.from({ length: GONG_PARTIALS }, (_, i) => 26 / (1 + 0.55 * i))
+/** Subida (s): los agudos tardan más en aparecer → el «bloom» típico de un gong. */
+const GONG_ATTACK = Array.from({ length: GONG_PARTIALS }, (_, i) => 0.3 + 0.08 * i)
+/** Desafinado relativo del segundo oscilador de cada parcial → batidos (más rápidos en los agudos). */
+const GONG_DETUNE = Array.from({ length: GONG_PARTIALS }, (_, i) => 0.0015 + 0.003 * (((i + 1) * 37) % 10) / 10)
+
+export interface GongOptions {
+  pitches?: readonly number[]
+  /** Segundos hasta el primer golpe. */
+  firstStrikeSec?: number
+  minGapSec?: number
+  maxGapSec?: number
 }
 
-class OmVoice {
-  readonly centFactor: number
-  readonly vibRate: number
-  readonly vibDepth: number
-  readonly drift: SlowRandom
-  readonly tilt: LP
-  readonly hum: LP
-  readonly bp1: BandPass
-  readonly bp2: BandPass
-  readonly bp3: BandPass
-  saw = 0
-  lfo = 0
-  constructor(index: number, rand: Rand, fs: number) {
-    this.centFactor = Math.pow(2, (CENTS[index] as number) / 1200)
-    this.vibRate = 4.6 + 1.0 * rand()
-    this.vibDepth = 0.0025
-    this.drift = new SlowRandom(rand, 0.2, fs)
-    this.tilt = new LP(600, fs)
-    this.hum = new LP(320, fs)
-    this.bp1 = new BandPass(fs)
-    this.bp2 = new BandPass(fs)
-    this.bp3 = new BandPass(fs)
-    this.lfo = rand() * TWO_PI
-  }
-}
+/** Pico de e^(−t/τ) − e^(−t/α) (para normalizar la envolvente de subida y bajada). */
+const bumpPeak = (alpha: number, tau: number) => Math.pow(alpha / tau, alpha / (tau - alpha)) * (1 - alpha / tau)
 
 /**
- * Coro de cinco voces graves que canta «Om» una y otra vez: sube suavemente a una «o» sostenida, pasa a
- * una «m» nasal, baja y respira. La vocal se forma filtrando una onda de diente de sierra con formantes
- * (F1/F2/F3) que pasan de los de una «o» a los de una «m». Con vibrato leve y deriva lenta de afinación.
+ * Gong profundo, uno cada 18–34 s. Cada parcial tiene su propia envolvente suave «sube y baja»
+ * (diferencia de dos exponenciales: empieza en cero, sin golpe seco), con los agudos tardando más en
+ * aparecer. Un velo de ruido filtrado (~1,8 kHz) crece y se apaga con él, como el «lavado» metálico de un gong.
  */
-export class OmGen implements NatureGen {
-  private readonly rand: Rand
-  private readonly invFs: number
+export class GongGen implements NatureGen {
+  private readonly rand: () => number
+  private readonly fs: number
   private readonly level: number
-  private readonly f0: number
-  private readonly jitter: number
-  private readonly voices: OmVoice[]
-  /** Fin acumulado de cada tramo del ciclo actual; el último es la duración total. */
-  private readonly bounds = new Float64Array(SEGMENTS.length)
-  private cycT = 0
-  private ampOut = 0
-  private mOut = 0
+  private readonly pitches: readonly number[]
+  private readonly minGap: number
+  private readonly maxGap: number
+  private wait: number
 
-  constructor(rand: Rand, fs: number, level = 1.0, opts: OmOptions = {}) {
+  private readonly active = new Uint8Array(GONG_VOICES)
+  private readonly gain = new Float64Array(GONG_VOICES)
+  private readonly phA = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  private readonly phB = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  private readonly incA = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  private readonly incB = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  private readonly e1 = new Float64Array(GONG_VOICES * GONG_PARTIALS) // e^(−t/τ)
+  private readonly e2 = new Float64Array(GONG_VOICES * GONG_PARTIALS) // e^(−t/α)
+  private readonly d1 = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  private readonly d2 = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  private readonly norm = new Float64Array(GONG_VOICES * GONG_PARTIALS)
+  // velo de ruido: misma forma de envolvente, con constantes propias
+  private readonly w1 = new Float64Array(GONG_VOICES)
+  private readonly w2 = new Float64Array(GONG_VOICES)
+  private readonly wash: BandPass
+  private readonly washD1: number
+  private readonly washD2: number
+  private readonly washNorm: number
+
+  constructor(rand: () => number, fs: number, level = 0.6, opts: GongOptions = {}) {
     this.rand = rand
-    this.invFs = 1 / fs
+    this.fs = fs
     this.level = level
-    this.f0 = opts.f0 ?? 110
-    this.jitter = opts.jitter ?? 0.12
-    this.voices = Array.from({ length: OM_VOICES }, (_, i) => new OmVoice(i, rand, fs))
-    this.newCycle()
-    this.cycT = 0
+    this.pitches = opts.pitches ?? GONG_PITCHES
+    this.minGap = opts.minGapSec ?? 18
+    this.maxGap = opts.maxGapSec ?? 34
+    this.wait = (opts.firstStrikeSec ?? 2 + 2 * rand()) * fs
+    this.wash = new BandPass(fs)
+    this.washD1 = Math.exp(-1 / (6 * fs))
+    this.washD2 = Math.exp(-1 / (1.4 * fs))
+    this.washNorm = 1 / bumpPeak(1.4, 6)
   }
 
-  private newCycle(): void {
-    const scale = 1 + (this.rand() * 2 - 1) * this.jitter
-    let acc = 0
-    for (let i = 0; i < SEGMENTS.length; i++) {
-      acc += (SEGMENTS[i] as number) * scale
-      this.bounds[i] = acc
+  private strike(): void {
+    let v = -1
+    for (let i = 0; i < GONG_VOICES; i++) {
+      if (!this.active[i]) {
+        v = i
+        break
+      }
     }
-  }
-
-  /** Amplitud (`ampOut`) y mezcla «o»→«m» (`mOut`, 0–1) en el instante `tau` del ciclo. */
-  private shape(tau: number): void {
-    const b = this.bounds
-    if (tau < 0 || tau >= (b[4] as number)) {
-      this.ampOut = 0
-      this.mOut = tau < 0 ? 0 : 1
-    } else if (tau < (b[0] as number)) {
-      this.ampOut = 0.5 - 0.5 * Math.cos((Math.PI * tau) / (b[0] as number))
-      this.mOut = 0
-    } else if (tau < (b[1] as number)) {
-      this.ampOut = 1
-      this.mOut = 0
-    } else if (tau < (b[2] as number)) {
-      const u = (tau - (b[1] as number)) / ((b[2] as number) - (b[1] as number))
-      const s = u * u * (3 - 2 * u)
-      this.ampOut = 1 - 0.15 * s
-      this.mOut = s
-    } else if (tau < (b[3] as number)) {
-      this.ampOut = 0.85
-      this.mOut = 1
-    } else {
-      const u = (tau - (b[3] as number)) / ((b[4] as number) - (b[3] as number))
-      this.ampOut = 0.85 * (0.5 + 0.5 * Math.cos(Math.PI * u))
-      this.mOut = 1
+    if (v < 0) return
+    const f1 = this.pitches[Math.floor(this.rand() * this.pitches.length)] as number
+    const life = 0.85 + 0.3 * this.rand()
+    for (let k = 0; k < GONG_PARTIALS; k++) {
+      const i = v * GONG_PARTIALS + k
+      const fk = f1 * (GONG_RATIOS[k] as number)
+      const tau = (GONG_TAU[k] as number) * life
+      const alpha = GONG_ATTACK[k] as number
+      this.incA[i] = (TWO_PI * fk) / this.fs
+      this.incB[i] = (TWO_PI * fk * (1 + (GONG_DETUNE[k] as number))) / this.fs
+      this.phA[i] = this.rand() * TWO_PI
+      this.phB[i] = this.rand() * TWO_PI
+      this.e1[i] = 1
+      this.e2[i] = 1
+      this.d1[i] = Math.exp(-1 / (tau * this.fs))
+      this.d2[i] = Math.exp(-1 / (alpha * this.fs))
+      this.norm[i] = (GONG_AMP[k] as number) / bumpPeak(alpha, tau)
     }
+    this.w1[v] = 1
+    this.w2[v] = 1
+    this.gain[v] = 0.6 + 0.4 * this.rand()
+    this.active[v] = 1
   }
 
   next(): number {
-    this.cycT += this.invFs
-    if (this.cycT >= (this.bounds[SEGMENTS.length - 1] as number)) {
-      this.cycT -= this.bounds[SEGMENTS.length - 1] as number
-      this.newCycle()
+    if (--this.wait <= 0) {
+      this.strike()
+      this.wait = (this.minGap + (this.maxGap - this.minGap) * this.rand()) * this.fs
     }
-    let sum = 0
-    for (let i = 0; i < OM_VOICES; i++) {
-      const voice = this.voices[i] as OmVoice
-      this.shape(this.cycT + (OFFSETS[i] as number))
-      const amp = this.ampOut
-      if (amp < 1e-4) continue
-      const m = this.mOut
-      // afinación: vibrato + deriva lenta, y una caída de ~1,5 % hacia la «m»
-      voice.lfo += (TWO_PI * voice.vibRate) * this.invFs
-      if (voice.lfo >= TWO_PI) voice.lfo -= TWO_PI
-      const f =
-        this.f0 * voice.centFactor * (1 + voice.vibDepth * Math.sin(voice.lfo) + 0.002 * voice.drift.tick()) * (1 - 0.015 * m)
-      voice.saw += f * this.invFs
-      if (voice.saw >= 1) voice.saw -= 1
-      const src = voice.tilt.tick(0.8 * (2 * voice.saw - 1))
-      // formantes: «o» ≈ 460 / 860 / 2650 Hz; «m» nasal ≈ 270 / 1000 / 2200 Hz con F2 y F3 muy atenuados
-      const y =
-        voice.bp1.tick(src, 460 - 190 * m, 5 - m) +
-        0.55 * (1 - 0.85 * m) * voice.bp2.tick(src, 860 + 140 * m, 7 - 4 * m) +
-        0.14 * (1 - 0.9 * m) * voice.bp3.tick(src, 2650 - 450 * m, 10) +
-        (0.1 + 0.3 * m) * voice.hum.tick(src)
-      // la «m» es más suave que la «o» (al cantar, el sonido nasal pierde fuerza)
-      sum += amp * (1 - 0.55 * m) * y
+    let tonal = 0
+    let washLevel = 0
+    for (let v = 0; v < GONG_VOICES; v++) {
+      if (!this.active[v]) continue
+      let vs = 0
+      for (let k = 0; k < GONG_PARTIALS; k++) {
+        const i = v * GONG_PARTIALS + k
+        let a = (this.phA[i] as number) + (this.incA[i] as number)
+        let b = (this.phB[i] as number) + (this.incB[i] as number)
+        if (a >= TWO_PI) a -= TWO_PI
+        if (b >= TWO_PI) b -= TWO_PI
+        this.phA[i] = a
+        this.phB[i] = b
+        const e1 = this.e1[i] as number
+        const e2 = this.e2[i] as number
+        vs += (e1 - e2) * (this.norm[i] as number) * (Math.sin(a) + Math.sin(b))
+        this.e1[i] = e1 * (this.d1[i] as number)
+        this.e2[i] = e2 * (this.d2[i] as number)
+      }
+      tonal += (this.gain[v] as number) * vs * 0.5
+      const w1 = this.w1[v] as number
+      const w2 = this.w2[v] as number
+      washLevel += (this.gain[v] as number) * (w1 - w2) * this.washNorm
+      this.w1[v] = w1 * this.washD1
+      this.w2[v] = w2 * this.washD2
+      if ((this.e1[v * GONG_PARTIALS] as number) < 2e-3) this.active[v] = 0
     }
-    return Math.tanh(sum * this.level)
+    const wash = washLevel === 0 ? 0 : washLevel * this.wash.tick(noise(this.rand), 1800, 0.7) * 0.9
+    return Math.tanh((tonal + wash) * this.level)
   }
 }

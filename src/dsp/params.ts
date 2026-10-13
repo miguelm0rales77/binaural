@@ -9,7 +9,7 @@ import {
 
 export const MODES: readonly BeatMode[] = ['binaural', 'monaural', 'isochronic']
 export const NATURE_TYPES: readonly NatureType[] = ['rain', 'wind', 'storm', 'river', 'forest']
-export const MEDITATION_TYPES: readonly MeditationType[] = ['bowls', 'om']
+export const MEDITATION_TYPES: readonly MeditationType[] = ['bowls', 'gong']
 /** Todos los fondos generados por síntesis, en el orden en que los guarda el motor. */
 export const GENERATED_TYPES: readonly (NatureType | MeditationType)[] = [...NATURE_TYPES, ...MEDITATION_TYPES]
 export const NOISE_TYPES: readonly NoiseType[] = ['none', 'white', 'pink', 'brown', ...GENERATED_TYPES]

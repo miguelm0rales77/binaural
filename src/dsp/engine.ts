@@ -1,6 +1,6 @@
 import { IsoEnvelope } from './envelope'
 import { loudnessCompGain } from './loudness'
-import { BowlsGen, OmGen } from './meditation'
+import { BowlsGen, GongGen } from './meditation'
 import { ForestGen, RainGen, RiverGen, StormGen, WindGen, type NatureGen } from './nature'
 import { NoiseGenerator } from './noise'
 import { Oscillator, TWO_PI } from './oscillator'
@@ -109,7 +109,7 @@ export class DspEngine {
       new RiverGen(rand, fs),
       new ForestGen(rand, fs),
       new BowlsGen(rand, fs),
-      new OmGen(rand, fs),
+      new GongGen(rand, fs),
     ]
     this.wNature = GENERATED_TYPES.map(() => new Smoother(0, TAU_GAIN, fs))
 

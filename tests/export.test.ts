@@ -219,7 +219,7 @@ describe('bucle sin costuras', () => {
     expect(worst).toBeLessThan(1e-4)
   })
 
-  it.each(['pink', 'brown', 'rain', 'wind', 'storm', 'river', 'forest', 'bowls', 'om'] as const)('con fondo (%s): sin salto audible en el empalme', { timeout: 120_000 }, (noiseType) => {
+  it.each(['pink', 'brown', 'rain', 'wind', 'storm', 'river', 'forest', 'bowls', 'gong'] as const)('con fondo (%s): sin salto audible en el empalme', { timeout: 120_000 }, (noiseType) => {
     const params = { ...base, mode: 'binaural' as const, carrierHz: 300, beatHz: 6, toneGain: 0.3, noiseType, noiseGain: 1 }
     const chunks: Int16Array[] = []
     const r = renderJob(loopJob(params), (c) => chunks.push(c), () => {}, { seed: 5 })
