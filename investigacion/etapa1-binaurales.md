@@ -7,11 +7,11 @@ Sin filtros. Resultados relevantes:
 - Garcia-Argibay et al., 2018. Psychol Res. Metaanálisis, 22 estudios, 35 tamaños de efecto. g = 0,45. Afirmaciones: A1, A6. Pendiente verificar DOI.
 - Baseanu et al., 2024. Applied Sciences. Revisión sistemática de ansiedad y depresión, 12 artículos. Sin metaanálisis. Afirmaciones: A1.
 - Işık et al., 2017. Br J Oral Maxillofac Surg. ECA, 60 pacientes, ansiedad preoperatoria dental. Control sin intervención (no placebo). Afirmaciones: A6.
-- Ölçücü et al., 2020. J Endourol. ECA controlado con placebo y música clásica, 252+159 pacientes (cistoscopia). Afirmaciones: A1, A5, A6, X3.
-- Salehabadi et al., 2023. Int Dent J. ECA, 80 pacientes, dental. Control sin intervención. Afirmaciones: A6.
+- Ölçücü et al., 2021 (epub 2020). J Endourol. ECA controlado con placebo y música clásica, 252+159 pacientes (cistoscopia). Afirmaciones: A1, A5, A6, X3.
+- Salehabadi et al., 2024 (epub 2023). Int Dent J. ECA, 80 pacientes, dental. Control sin intervención. Afirmaciones: A6.
 - Pang et al., 2024. Psychol Music. ECA, 151 universitarios. BB frente a música china y audiolibro. Sin efecto significativo en la población general; efecto solo en ansiedad alta. Afirmaciones: A1, A15. (Dato a favor de la hipótesis nula en población sana.)
 - P. R et al., 2026. Indian J Psychol Med. Estudio pre-post de una sola rama, 100 pacientes con abstinencia alcohólica. No es ECA. Afirmaciones: A1 (solo contexto).
-- Mosheshe et al., 2024. Anat Sci Educ. Cuasiexperimental, 13 estudiantes. Afirmaciones: A1 (solo contexto).
+- Mosheshe LT, Correia JC, Rampf N, 2024. Anat Sci Educ. Cuasiexperimental, 13 estudiantes. Afirmaciones: A1 (solo contexto).
 - Liu et al., 2024. Depress Anxiety. Cuasiexperimental, 40 personas, BB + estimulación fótica. Afirmaciones: A1, F9 (la estimulación fótica exige cautela).
 - Elnazer, 2026. Acta Neuropsychiatrica. Revisión sistemática de 10 ensayos en jóvenes. Efectos moderados. Afirmaciones: A1, A4.
 
@@ -21,7 +21,7 @@ Sin filtros. Mismo metaanálisis que B01 (Garcia-Argibay 2018). Confirma g = 0,4
 ## B03 — Publication bias and heterogeneity in binaural beat studies
 Sin filtros. No aparece ningún análisis primario de sesgo de publicación. Lo que hay son revisiones que describen heterogeneidad metodológica:
 - Ingendoh et al., 2023. PLOS ONE. Revisión sistemática de 14 estudios de EEG: 5 a favor de la hipótesis del arrastre, 8 en contra, 1 mixto. Muy heterogéneos. Afirmaciones: A2, A3. Pendiente DOI.
-- Li et al., 2025. Innovation in Aging. Umbrella review de 7 revisiones sistemáticas sobre BBS en Alzheimer y deterioro cognitivo. Menciona 40 Hz y declara heterogeneidad, sin protocolos estandarizados. Afirmaciones: A8, A9. Ojo: es un resumen de revisiones, no un ensayo; el propio texto sugiere efectos de amiloide sin base sólida.
+- Li et al., 2025. Innovation in Aging, suplemento 2: abstract de congreso, no artículo completo. Resume 7 revisiones sistemáticas sobre BBS en Alzheimer y deterioro cognitivo. Menciona 40 Hz y declara heterogeneidad, sin protocolos estandarizados. Afirmaciones: A8, A9. Ojo: es un resumen de revisiones, no un ensayo; el propio texto sugiere efectos de amiloide sin base sólida.
 - Papadatou et al., 2026. Auditory Perception & Cognition. Revisión de alcance, 45 estudios (BB, MB, iT). Evidencia mixta. Afirmaciones: A7, A3.
 - Incidencia: ninguna búsqueda con "publication bias" devuelve un funnel plot o un test de Egger en binaurales. Propongo una búsqueda nueva: "Egger test funnel plot binaural beats anxiety meta-analysis".
 
@@ -43,9 +43,9 @@ Lectura preliminar (no es veredicto): las muestras son pequeñas (13–33), los 
 
 ## B05 — Systematic review of binaural beat effects on EEG power and functional connectivity
 Sin filtros. Mismas revisiones que B04 (Ingendoh 2023). Estudios primarios nuevos:
-- Gálvez et al., 2017 (Int J Neural Syst). ECA doble ciego, cruzado, 10 min, pacientes con Parkinson (n pequeño, no indicado en el resumen). Disminución de theta, de conectividad y mejora de memoria de trabajo; sin cambios en ansiedad. Afirmaciones: A2, A7, A4.
+- Gálvez et al., 2018 (epub 2017; Int J Neural Syst). ECA doble ciego, cruzado, 10 min, pacientes con Parkinson (n pequeño, no indicado en el resumen). Disminución de theta, de conectividad y mejora de memoria de trabajo; sin cambios en ansiedad. Afirmaciones: A2, A7, A4.
 - Beauchene et al., 2016 (PLoS ONE). 15 Hz BB durante una tarea visuoespacial de memoria de trabajo: mejora de la precisión y cambios de red. Los controles auditivos y BB 5 y 10 Hz la empeoran. Afirmaciones: A7, A10.
-- Wang et al., 2022 (Brain Sci). Fatiga mental, 15 Hz BB frente a 40 Hz frente a música frente a tono puro. Sin diferencias en escalas ni en PVT. Cambios de conectividad solo en el grupo de 15 Hz, pero el resumen dice "proven intervention", lo que no se sostiene con este diseño. Afirmaciones: A7 (aviso de sobreinterpretación).
+- Wang et al., 2022 (Brain Sci). Fatiga mental, 15 Hz BB frente a 40 Hz frente a música frente a tono puro. Sin diferencias en escalas ni en PVT. Cambios de conectividad en el grupo de 15 Hz y también en el de tono puro de 240 Hz (el resumen lo interpreta como señal de fatiga), pero el resumen dice "proven intervention", lo que no se sostiene con este diseño. Afirmaciones: A7 (aviso de sobreinterpretación).
 - Choi et al., 2022 (Medicine). 18 sujetos, BB de 10 Hz con portadoras inaudibles (18 kHz): aumento de potencia alfa frontal. Sin grupo control real. Afirmaciones: A2, A7.
 - Mujib et al., 2026 (Front Neurosci). 60 participantes, BB alfa 10 Hz, beta 14 Hz, gamma 30 Hz; mejora de memoria de dígitos en grupo alfa y gamma; efectos en red theta. Afirmaciones: A7, A8.
 - Ioannou et al., 2015 (PLoS ONE). BB de 1 min entre 1 y 48 Hz. Respuestas más fuertes en alfa; diferencias en músicos. Afirmaciones: A2, A3.
@@ -79,7 +79,7 @@ Sin filtros. Muestras pequeñas y resultados mixtos. Ningún metaanálisis.
 - Dini et al., 2022 (J Sleep Sci). 24 pacientes con insomnio, control no equivalente. Mejora de PSQI con d = 0,46. Afirmaciones: A4, A5.
 - Lin et al., 2024 (Geriatr Gerontol Int). ECA de 64 personas mayores en residencia, 14 días. La música incluía binaurales, por lo que no se puede aislar el efecto del componente binaural. Afirmaciones: A4, A1.
 - Shumov et al., 2020 (Zh Nevrol Psikhiatr). 21 sujetos, siesta con música theta/delta. No confirma reducción de latencia; sí estabilidad del sueño. Afirmaciones: A4.
-- Li et al., 2025 (Innov Aging). Umbrella review: menciona "incremento de sueño de ondas lentas" con 40 Hz. Revisa en B03; no es evidencia primaria.
+- Li et al., 2025 (Innov Aging, abstract de congreso). Resumen de revisiones: menciona "incremento de sueño de ondas lentas" con 40 Hz. Revisa en B03; no es evidencia primaria.
 
 Lectura preliminar: la evidencia de sueño es de muestras de 10–24 y algunos ECA pequeños. Hay señales positivas en latencia (0,25 Hz y dinámicos) y ninguna prueba de cambio de delta fiable. Coherente con A4 "Baja". Afirmación de la app: solo la latencia y la continuidad son candidatas, no el sueño profundo.
 
@@ -106,7 +106,7 @@ Sin filtros de diseño (la consulta incluye "randomized controlled trial" como t
 - Menziletoğlu et al., 2021 (Med Oral Patol Oral Cir Bucal). 90 pacientes, tercer molar: BB y música de 432 Hz reducen ansiedad frente a control. Afirmaciones: A6, A12.
 - Madhumitha et al., 2025 (J Indian Soc Periodontol). ECA de 50 pacientes, cirugía periodontal, BB frente a sin intervención. Reducción de ansiedad y de FC. Afirmaciones: A6.
 - Işık et al., 2017 (BJOMS). ECA de 60 pacientes, tercer molar: BB (200 y 209,3 Hz) frente a control. Reducción de ansiedad. Afirmaciones: A6.
-- Salehabadi et al., 2023 (Int Dent J). Ensayo clínico de 80 pacientes, cirugía de tercer molar, BB frente a control. Reducción de ansiedad. Afirmaciones: A6.
+- Salehabadi et al., 2024 (epub 2023) (Int Dent J). Ensayo clínico de 80 pacientes, cirugía de tercer molar, BB frente a control. Reducción de ansiedad. Afirmaciones: A6.
 - Shehani et al., 2024 (Cureus). ECA de 252 niños de 7–12 años, BB con estimulación visual alfa frente a manejo habitual. Menos FC y presión sistólica. Afirmaciones: A6, F9 (estimulación visual, cautela).
 - Kotaiah et al., 2026 (Adolesc Saúde). ECA de 50 niños, extracción dental: BB frente a EMDR; BB con ansiedad menor a la salida. Afirmaciones: A6, A15 (comparación con otra técnica, no con música).
 - Bhusari et al., 2025 (J Oral Biol Craniofac Res). ECA triple brazo de 75 niños: BB frente a música elegida frente a sin música. Ambos reducen ansiedad frente a control. Afirmaciones: A6, A15.
@@ -287,8 +287,8 @@ Búsquedas lanzadas: B01–B20 (20 de 20). Con límite de frecuencia: B01 y B03 
 9. Aviso de fuentes: Oberle 2022 (programa de una app comercial), Boasso 2023 y Funk 2022 (financiación o centro comercial). No pueden ser base de ninguna afirmación.
 
 ## Verificación en PubMed (estado al cierre de esta sesión)
-Verificadas (PMID y DOI confirmados por metadatos): Garcia-Argibay 2018; Ingendoh 2023; Xiong 2025; Shukla 2025; Isik 2017; Menziletoğlu 2021; Zaki 2025; Fatima 2026; Shamsi 2024; Sforza 2026; Gkolias 2020; Orozco Perez 2020; Klichowski 2023; Vickrey 2023; Dos Anjos 2024; Harrington 2021; Ngo 2013; Schneider 2020; Basner 2026; Chan 2022; Hsiung 2024; Wu 2025; Ang 2025; Soula 2023. Total: 24 de 32 filas del CSV (incluye exclusiones).
-No encontradas en PubMed (no citar hasta buscarlas en otra base): Perrott & Nelson 1969; Pang 2024; Calamassi 2019 y 2022 (las búsquedas por apellido y por título no dieron resultados).
+Verificadas (PMID y DOI confirmados por metadatos): Garcia-Argibay 2018; Ingendoh 2023; Xiong 2025; Shukla 2025; Isik 2017; Menziletoğlu 2021; Zaki 2025; Fatima 2026; Shamsi 2024; Sforza 2026; Gkolias 2020; Orozco Perez 2020; Klichowski 2023; Vickrey 2023; Dos Anjos 2024; Harrington 2021; Ngo 2013; Schneider 2020; Basner 2026; Chan 2022; Hsiung 2024; Wu 2025; Ang 2025; Soula 2023. Añadidas después de esa lista: Prithiviraj 2026; Ölçücü 2021; Salehabadi 2024; Mosheshe 2024; Liu 2024; Elnazer 2026; López-Caballero 2017; Vernon 2014; Gálvez 2018; Beauchene 2016; Mujib 2026; Rao 2024; Ioannou 2015; Wang 2022. Total: 38 de 46 filas del CSV (incluye exclusiones).
+No encontradas en PubMed (no citar hasta buscarlas en otra base): Perrott & Nelson 1969; Pang 2024; Calamassi 2019 y 2022 (las búsquedas por apellido y por título no dieron resultados). Choi 2022 (Medicine), Mahmood 2022 (Mathematics) y Papadatou 2026: sin resultado en PubMed. Li 2025 tiene DOI 10.1093/geroni/igaf122.2847 y registro en PMC (PMC12760695), pero no PMID: es un abstract de congreso.
 Excluidas por fuente comercial o no primaria: Boasso 2023, Oberle 2022, Funk 2022 (comerciales); Oster 1973 (divulgación).
 Verificación con fuentes externas (DOI aportados por el usuario; no aparecen en PubMed, así que no cuentan como verificadas en PubMed):
 - Baseanu 2024, Appl Sci, DOI 10.3390/app14135675: el DOI no se resuelve en PubMed (la revista no está indexada allí). Pendiente de comprobar en otra base.
