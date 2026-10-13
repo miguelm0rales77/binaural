@@ -116,6 +116,20 @@ export function customPattern(t: CustomTiming, safety = true): { pattern: Breath
   }
 }
 
+/**
+ * Presets de respiración con la frecuencia de resonancia personal (de «Mi frecuencia») en el preset de resonancia.
+ * Sin prueba hecha, es 6 rpm y el nombre sigue siendo «Resonancia 6».
+ */
+export function presetsFor(resonanceRpm: number | null): readonly BreathPreset[] {
+  if (resonanceRpm === null) return BREATH_PRESETS
+  const rpm = Math.round(resonanceRpm * 10) / 10
+  return BREATH_PRESETS.map((p) =>
+    p.id === 'resonance'
+      ? { ...p, name: `Resonancia ${Number.isInteger(rpm) ? rpm : rpm.toFixed(1)}`, pattern: { ...p.pattern, rpm } }
+      : p,
+  )
+}
+
 const fmt = (v: number, digits = 1) => v.toFixed(digits).replace('.', ',')
 
 /** Resumen de una línea: «6,0 rpm · inspiración 4,0 s · espiración 6,0 s». */
@@ -130,4 +144,19 @@ export function describeBreath(p: BreathPattern): string {
   if (p.holdOutSec > 0) parts.push(`retención ${fmt(p.holdOutSec)} s`)
   if ((p.rampSec ?? 0) > 0) parts.push(`rampa desde ${fmt(p.rampFromRpm ?? 8)} rpm`)
   return parts.join(' · ')
+}
+
+/**
+ * Nombre del preset que corresponde a un patrón (para el registro de práctica). Compara ritmo, proporción y rampa;
+ * si ninguno coincide, la sesión es «Personalizado».
+ */
+export function presetLabel(p: BreathPattern, presets: readonly BreathPreset[]): string {
+  const ramp = (x: BreathPattern) => (x.rampSec ?? 0) > 0
+  const hit = presets.find(
+    (b) =>
+      Math.abs(b.pattern.rpm - p.rpm) < 1e-6 &&
+      Math.abs(b.pattern.inhaleRatio - p.inhaleRatio) < 1e-6 &&
+      ramp(b.pattern) === ramp(p),
+  )
+  return hit?.name ?? 'Personalizado'
 }

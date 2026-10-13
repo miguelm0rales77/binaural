@@ -210,3 +210,19 @@
 - **Motor:** no aplica estos límites. El tope técnico del motor pasa a 30 rpm y a 60 s por retención, para que el editor pueda ir sin limitaciones. Los límites de seguridad viven solo en el editor.
 - **Aviso de actividades (nuevo):** no hacer estas respiraciones, sobre todo las retenciones, mientras se hace una actividad en la que perder el conocimiento podría poner en peligro (nadar o estar en el agua, conducir, manejar maquinaria, subir a una escalera). Aparece en el diálogo de primer uso y como texto fijo en la sección.
 - **Verificado en el navegador:** al quitar la casilla aparece el diálogo; al confirmar, el aviso fijo y el máximo de retención pasan a 60 s; al volver a activarla, el máximo vuelve a 10 s.
+
+## Fase 10 — registro de práctica y «Mi frecuencia» (Bloque B)
+- **Registro (`src/practice.ts`):** cada sesión de respiración guiada que dura al menos 5 s se guarda en `binaural:practice:v1` con fecha local (AAAA-MM-DD), segundos, ritmo final y nombre del preset (o «Personalizado»). Máximo 5 000 entradas; las corruptas se descartan al leer. Todo pasa por try/catch: sin almacenamiento, el registro simplemente no se guarda.
+- **Sesiones de «Mi frecuencia» no se registran:** son una prueba, no práctica.
+- **Objetivo diario:** 40 min por defecto (2 × 20 min), entre 5 y 240 min, en `binaural:practice-goal:v1`.
+- **Racha:** días seguidos con al menos una sesión, contando hacia atrás desde hoy. Si hoy aún no hay sesión, se cuenta desde ayer. Es una decisión mía; el plan no la define.
+- **Vista:** hoy frente al objetivo, barras de los últimos 7 días con la línea del objetivo y la racha. **Sin notificaciones.** Exportación a CSV (`fecha,segundos,minutos,rpm,preset`).
+- **«Mi frecuencia» (`src/resonance.ts`, `src/ui/ResonanceTest.tsx`):** cinco escalones de 6,5 a 4,5 rpm, 2 min de respiración guiada cada uno, y entre escalones 1 min de respiración libre (sin guía). Tras cada escalón se puntúa la comodidad (1–5) y si ha faltado el aire. En el último escalón se puntúa sin descanso. Duración total unos 14 min si se puntúa a tiempo.
+- **Tiempo de la prueba:** sale del reloj del motor, igual que el círculo. Cada escalón empieza un ciclo limpio en el instante del cambio de ritmo (ver abajo).
+- **Recomendación:** la de mayor comodidad entre los escalones sin falta de aire. Si todos dejan falta de aire, se elige entre todos. En empate, gana el ritmo más alto. Se guarda como predeterminada (`binaural:resonance-rpm:v1`) y el preset «Resonancia» pasa a llamarse con esa cifra («Resonancia 5.5»). Sin prueba, sigue siendo «Resonancia 6».
+- **Texto honesto:** «Sin sensor de pulso esto es una aproximación por comodidad; la determinación precisa requiere medir la frecuencia cardíaca.»
+- **Requisito:** la prueba necesita que el aviso de seguridad de la respiración ya esté aceptado (se muestra en «Respirar»).
+- **Cambio en el motor (necesario para la prueba):** cambiar el patrón, o volver a activar la respiración, empieza el ciclo en ese instante (`breathOrigin`). Antes, el ciclo contaba desde el inicio de la sesión y el cambio de ritmo saltaba de fase. El controlador replica la regla para que el círculo arranque en el mismo instante que el audio. Test: al cambiar el ritmo a los 3 s hay una campanilla exactamente en 3,0 s.
+- **Límites del ritmo en el motor:** 1–30 rpm y retenciones de hasta 60 s (límites técnicos). Las limitaciones de seguridad siguen en el editor.
+- **Verificado:** 219 tests en verde. En el navegador: el registro muestra correctamente hoy, la racha y las barras con datos de prueba; «Mi frecuencia» arranca en el escalón 1 (6,5 rpm) con el círculo moviéndose.
+- **Sin verificar:** el recorrido completo de 14 min en el navegador (el navegador solo avanza los fotogramas con la pestaña visible; con el panel oculto la prueba queda parada, sin error de la app), la exportación CSV descargada y la puntuación real de un escalón en pantalla.

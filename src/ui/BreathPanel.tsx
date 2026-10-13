@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  BREATH_PRESETS,
   CUSTOM_LIMITS,
   customPattern,
   describeBreath,
@@ -22,6 +21,7 @@ export interface BreathSummary {
 }
 
 interface Props {
+  presets: readonly BreathPreset[]
   breath: BreathSettings
   timerMin: number | null
   /** Reloj del motor: `now` es el tiempo actual del contexto (null sin contexto); `startedAt` cuándo se pidió el arranque. */
@@ -48,7 +48,7 @@ const PHASE_TEXT = { in: 'Inspira', holdIn: 'Mantén', out: 'Espira', holdOut: '
  * Sección «Respirar»: círculo que sigue a la respiración del motor, presets y controles.
  * El círculo no parpadea: crece y decrece con el llenado pulmonar, a 0,1 Hz.
  */
-export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTimer, summary, onCloseSummary }: Props) {
+export function BreathPanel({ presets, breath, timerMin, clock, onChange, onPreset, onTimer, summary, onCloseSummary }: Props) {
   const [presetChoice, setPresetChoice] = useState<PresetChoice>('resonance')
   const [accepted, setAccepted] = useState(() => readFlag(BREATH_ACCEPTED_KEY))
   const [asking, setAsking] = useState(false)
@@ -228,7 +228,7 @@ export function BreathPanel({ breath, timerMin, clock, onChange, onPreset, onTim
       <fieldset className="breath-presets">
         <legend>Preset de respiración</legend>
         <div className="breath-preset-row">
-          {BREATH_PRESETS.map((p) => (
+          {presets.map((p) => (
             <button
               key={p.id}
               type="button"

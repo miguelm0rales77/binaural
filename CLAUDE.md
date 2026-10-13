@@ -8,7 +8,7 @@ presets, temporizador, exportación a WAV y reproducción en segundo plano. **To
 - Detalle de todas las decisiones y por qué: **`DECISIONES.md`** (léelo antes de cambiar algo). `README.md` = uso y despliegue.
 
 ## Estado (fases 0–7 del plan original hechas, más extras)
-React 18 + TypeScript estricto + Vite + Vitest + `vite-plugin-pwa`. **192 tests**. Fases 0–9 del plan hechas (0–7 publicadas; 8 y 9 en commits locales, sin push), y además:
+React 18 + TypeScript estricto + Vite + Vitest + `vite-plugin-pwa`. **219 tests**. Fases 0–10 del plan hechas (0–7 publicadas; 8 a 10 en commits locales, sin push), y además:
 sensibilidad sensorial (aviso TEA/hiperacusis), volúmenes de arranque bajos, techo de volumen 0,8, fondos sintetizados
 (naturaleza: lluvia, viento, tormenta con truenos, río, bosque; meditación: cuencos tibetanos y gong), estilo de marca
 Como Sentirse Bien (claro crema / oscuro verde bosque según el sistema), icono de auriculares con onda de batido.
@@ -39,7 +39,7 @@ Los tests de DSP renderizan minutos de audio: pueden tardar si la máquina está
 
 ## Pendiente
 Decisiones tomadas en la revisión de pendientes (decidido por el usuario):
-- **Plan `docs/PLAN-app-binaural.md`** (copiado al repo): Fases 0 y 1 ya estaban hechas (commits `fase 0` y `fase 1`). Fases 8 (reloj respiratorio, `src/dsp/breath.ts`) y 9 (sección «Respirar», presets y sesiones) hechas. Siguiente: **Fase 10** (registro de práctica y «mi frecuencia»), luego **Bloque C** (Fases 11–14, fractales). Pendiente de respiración: bucle de exportación y segundo plano sin respiración (ciclos enteros). Ejecutar fase a fase con parada para revisión.
+- **Plan `docs/PLAN-app-binaural.md`** (copiado al repo): Fases 0 y 1 ya estaban hechas (commits `fase 0` y `fase 1`). Fases 8 (reloj respiratorio, `src/dsp/breath.ts`) y 9 (sección «Respirar», presets y sesiones) hechas. Fase 10 hecha (registro de práctica y «Mi frecuencia»). Siguiente: **Bloque C** (Fases 11–14, fractales); antes, revisión de la Fase 10 por el usuario. Pendiente de respiración: bucle de exportación y segundo plano sin respiración (ciclos enteros). Ejecutar fase a fase con parada para revisión.
 - **Bloque D (biofeedback con sensor de pulso): no se realiza por ahora.** No preguntar la plataforma hasta que se retome.
 - Códigos de activación **firmados** (Ed25519): **aplazados**.
 - Licencia: **todos los derechos reservados** por ahora.

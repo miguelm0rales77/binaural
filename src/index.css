@@ -983,3 +983,79 @@ progress::-moz-progress-bar {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Registro de práctica (Fase 10): barras de la semana con la línea del objetivo. */
+.practice-today {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+.practice-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0.75rem 0 1rem;
+}
+.practice-day {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+.practice-bar-wrap {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  border-bottom: 1px solid var(--border);
+}
+.practice-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--viz-line);
+}
+.practice-goal-line {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 2px;
+  background: var(--rule);
+}
+.practice-day-name,
+.practice-day-min {
+  line-height: 1.2;
+}
+
+/* Mi frecuencia (Fase 10): escalón en curso, puntuación y resultado. */
+.resonance-live {
+  display: grid;
+  gap: 0.75rem;
+}
+.resonance-status {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+.resonance-score {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.resonance-comfort {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.resonance-comfort button[aria-pressed='true'] {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+}
+.resonance-result ul {
+  padding-left: 1.2rem;
+}

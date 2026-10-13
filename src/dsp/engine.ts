@@ -109,6 +109,9 @@ export class DspEngine {
 
   // Respiración: pesos de las señales (0 o 1, suavizados) y estado del reloj.
   private breathOn = false
+  /** Instante (s del motor) en el que empezó el patrón actual: cada cambio de ritmo empieza un ciclo limpio. */
+  private breathOrigin = 0
+  private breathKey = ''
   private breathStopAt: number | null = null
   private chimeOn = false
   private breathPattern: BreathPattern = DEFAULT_BREATH_PATTERN
@@ -212,7 +215,15 @@ export class DspEngine {
   /** Respiración: interruptor, patrón y señales. Sin respiración, las señales se apagan y no cambia nada del audio. */
   private applyBreath(): void {
     const b = this.params.breath
+    const wasOn = this.breathOn
     this.breathOn = b.enabled
+    // Un patrón distinto, o volver a activar la respiración, empieza el ciclo en este instante (sin saltos de fase).
+    const key = JSON.stringify(b.pattern)
+    if (key !== this.breathKey || (this.breathOn && !wasOn)) {
+      this.breathKey = key
+      this.breathOrigin = this.elapsed
+      this.lastPhaseId = -1
+    }
     this.breathStopAt = b.stopAtSec
     this.chimeOn = b.enabled && b.cues.chime
     this.breathPattern = b.pattern
@@ -294,6 +305,7 @@ export class DspEngine {
       this.fade = 0
       this.elapsed = 0
       this.programOrigin = 0
+      this.breathOrigin = 0
       this.lastPhaseId = -1
       this.sessionDeadline = this.sessionLen
       this.snapSmoothers()
@@ -394,7 +406,7 @@ export class DspEngine {
       let level = 0
       if (this.breathOn) {
         const at = this.elapsed + (i - start) * this.invFs
-        const br = breathStateInto(this.breathNow, at, this.breathPattern)
+        const br = breathStateInto(this.breathNow, at - this.breathOrigin, this.breathPattern)
         level = this.breathLevel(at)
         const id = br.cycleIndex * 4 + phaseIndex(br.phase)
         if (id !== this.lastPhaseId) {

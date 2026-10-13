@@ -5,10 +5,12 @@ import { bandFor } from './bands'
 import type { BreathPattern } from './dsp/breath'
 import type { EngineParams, NoiseType, ParamsPatch, Preset, Program } from './dsp/types'
 import { MASTER_CEILING, MEDITATION_TYPES, NATURE_TYPES, RANGES, isMeditation, isNature, mergeParams, sanitizeParams } from './dsp/params'
-import type { BreathPreset } from './breathPresets'
+import { RESONANCE_PATTERN, presetLabel, presetsFor, type BreathPreset } from './breathPresets'
+import { loadGoal, loadPractice, loadResonance, localDate, saveGoal, savePractice, saveResonance, type PracticeEntry } from './practice'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
+  BREATH_ACCEPTED_KEY,
   ISO_WARNING_KEY,
   TIMER_OPTIONS_MIN,
   cleanPresetName,
@@ -23,6 +25,8 @@ import { BAND_NOTE, ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
 import { BreathPanel, type BreathSummary } from './ui/BreathPanel'
+import { PracticePanel } from './ui/PracticePanel'
+import { ResonanceTest } from './ui/ResonanceTest'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
@@ -96,7 +100,10 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
   const [summary, setSummary] = useState<BreathSummary | null>(null)
   // Patrón de la sesión en curso si la respiración estaba activa al empezar, y último tiempo informado por el motor.
-  const sessionBreath = useRef<BreathPattern | null>(null)
+  const sessionBreath = useRef<{ pattern: BreathPattern; label: string } | null>(null)
+  const [practice, setPractice] = useState<PracticeEntry[]>(() => loadPractice())
+  const [goal, setGoal] = useState<number>(() => loadGoal())
+  const [resonance, setResonance] = useState<number | null>(() => loadResonance())
   const lastElapsed = useRef(0)
 
   useEffect(() => {
@@ -108,9 +115,15 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     c.onStopped = () => {
       setStatus('stopped')
       setInfo(null)
-      const pattern = sessionBreath.current
+      const session = sessionBreath.current
       sessionBreath.current = null
-      if (pattern && lastElapsed.current >= 5) setSummary({ elapsedSec: lastElapsed.current, pattern })
+      if (session && lastElapsed.current >= 5) {
+        setSummary({ elapsedSec: lastElapsed.current, pattern: session.pattern })
+        setPractice((list) => [
+          ...list,
+          { date: localDate(), seconds: Math.round(lastElapsed.current), rpm: session.pattern.rpm, preset: session.label },
+        ])
+      }
     }
     controller.current = c
     const b = new BackgroundPlayer()
@@ -132,6 +145,17 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   useEffect(() => {
     saveUserPresets(userPresets)
   }, [userPresets])
+
+  // Registro de práctica, objetivo y frecuencia de resonancia: se guardan en este dispositivo.
+  useEffect(() => {
+    savePractice(practice)
+  }, [practice])
+  useEffect(() => {
+    saveGoal(goal)
+  }, [goal])
+  useEffect(() => {
+    if (resonance !== null) saveResonance(resonance)
+  }, [resonance])
 
   const update = (patch: ParamsPatch) => {
     setBgStale(true)
@@ -187,6 +211,24 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     controller.current?.setTimer(min === null ? null : min * 60)
   }
 
+  /** Arranca el audio con `next`. `label` identifica la sesión en el registro; null = no se registra (p. ej. «Mi frecuencia»). */
+  const startPlayback = async (next: EngineParams, prog: Program | null, timerSec: number | null, label: string | null) => {
+    const c = controller.current
+    if (!c || !accepted || status !== 'stopped') return
+    bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
+    setStatus('starting')
+    setError(null)
+    setSummary(null)
+    sessionBreath.current = label !== null && next.breath.enabled ? { pattern: next.breath.pattern, label } : null
+    try {
+      await c.play(next, prog, timerSec)
+      setStatus('playing')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      setStatus('stopped')
+    }
+  }
+
   const toggle = async () => {
     const c = controller.current
     if (!c || !accepted) return
@@ -195,19 +237,36 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       c.stop()
       return
     }
-    if (status !== 'stopped') return
-    bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
-    setStatus('starting')
-    setError(null)
-    setSummary(null)
-    sessionBreath.current = params.breath.enabled ? params.breath.pattern : null
-    try {
-      await c.play(params, program, timerMin === null ? null : timerMin * 60)
-      setStatus('playing')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-      setStatus('stopped')
+    await startPlayback(
+      params,
+      program,
+      timerMin === null ? null : timerMin * 60,
+      presetLabel(params.breath.pattern, presetsFor(resonance)),
+    )
+  }
+
+  /** «Mi frecuencia»: arranca con la guía a `rpm`, o cambia el ritmo si ya suena. No cuenta en el registro. */
+  const startResonance = (rpm: number) => {
+    if (status === 'playing') {
+      setResonanceBreath(true, rpm)
+      return
     }
+    const next = mergeParams(params, {
+      breath: { enabled: true, pattern: { ...RESONANCE_PATTERN, rpm, rampSec: 0 }, stopAtSec: null },
+    })
+    setParams(next)
+    void startPlayback(next, null, null, null)
+  }
+
+  /** Activa o desactiva la guía y fija el ritmo mientras suena (lo usa la prueba). */
+  const setResonanceBreath = (enabled: boolean, rpm: number) => {
+    update({ breath: { enabled, pattern: { ...RESONANCE_PATTERN, rpm, rampSec: 0 } } })
+  }
+
+  const stopPlayback = () => {
+    if (status !== 'playing') return
+    setStatus('stopping')
+    controller.current?.stop()
   }
 
   const startBackground = () => {
@@ -472,6 +531,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       </section>
 
       <BreathPanel
+        presets={presetsFor(resonance)}
         breath={params.breath}
         timerMin={timerMin}
         clock={breathClock}
@@ -481,6 +541,19 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         summary={summary}
         onCloseSummary={() => setSummary(null)}
       />
+
+      <ResonanceTest
+        playing={status === 'playing'}
+        ready={readFlag(BREATH_ACCEPTED_KEY)}
+        saved={resonance}
+        clock={breathClock}
+        onStart={startResonance}
+        onBreath={setResonanceBreath}
+        onStop={stopPlayback}
+        onDone={setResonance}
+      />
+
+      <PracticePanel entries={practice} goalMin={goal} today={localDate()} onGoalChange={setGoal} />
 
       <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />
 

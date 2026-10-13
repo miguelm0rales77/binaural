@@ -292,6 +292,37 @@ describe('8. patrón personalizado', () => {
   })
 })
 
+describe('9. cambio de ritmo', () => {
+  it('cambiar el ritmo a los 3 s empieza un ciclo nuevo en ese instante (campanilla en 3,0 s)', () => {
+    const six: BreathPattern = { rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0, rampSec: 0 }
+    const five: BreathPattern = { rpm: 5, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0, rampSec: 0 }
+    const e = new DspEngine(
+      FS,
+      { toneGain: 0, noiseType: 'none', masterGain: 1, loudnessComp: false, breath: breathCues({ chime: true }, six) },
+      { fadeSec: 0, rand: seeded(5), masterCeiling: 1 },
+    )
+    e.start()
+    const first = render(e, 3 * FS).L
+    e.setParams({ breath: breathCues({ chime: true }, five) })
+    const second = render(e, 4 * FS).L
+    const L = new Float32Array(first.length + second.length)
+    L.set(first, 0)
+    L.set(second, first.length)
+    const onsets: number[] = []
+    let quiet = 1e9
+    for (let i = 0; i < L.length; i++) {
+      if (Math.abs(L[i] as number) > 1e-6) {
+        if (quiet >= 48) onsets.push(i)
+        quiet = 0
+      } else quiet++
+    }
+    const at = 3 * FS
+    const near = onsets.find((o) => Math.abs(o - at) <= 2)
+    console.log(`  notas (muestras): ${onsets.join(', ')}`)
+    expect(near).toBeDefined()
+  })
+})
+
 function pearson(x: number[], y: number[]): number {
   const n = x.length
   const mx = x.reduce((a, b) => a + b, 0) / n

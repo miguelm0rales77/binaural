@@ -18,6 +18,8 @@ export class AudioController {
 
   /** Tiempo del contexto (s) en el que se pidió el arranque: la respiración de la interfaz se mide desde aquí. */
   startedAt = 0
+  private breathOn = false
+  private breathKey = ''
 
   /** Tiempo actual del contexto de audio, o null si todavía no existe. */
   get contextTime(): number | null {
@@ -66,6 +68,9 @@ export class AudioController {
       this.node = node
     }
 
+    // Estado inicial de la respiración, para que el espejo del motor empiece igual que él.
+    this.breathOn = params.breath.enabled
+    this.breathKey = JSON.stringify(params.breath.pattern)
     this.send({ type: 'params', params })
     this.send({ type: 'program', program, startAtSec: 0 })
     this.send({ type: 'timer', sec: timerSec })
@@ -74,6 +79,14 @@ export class AudioController {
   }
 
   setParams(params: ParamsPatch): void {
+    // Espejo de la regla del motor: un patrón distinto, o activar la respiración, empieza el ciclo ahora.
+    const b = params.breath
+    const wasOn = this.breathOn
+    if (typeof b?.enabled === 'boolean') this.breathOn = b.enabled
+    const key = b?.pattern ? JSON.stringify(b.pattern) : null
+    const restart = (key !== null && key !== this.breathKey) || (this.breathOn && !wasOn)
+    if (key !== null) this.breathKey = key
+    if (restart && this.ctx) this.startedAt = this.ctx.currentTime
     this.send({ type: 'params', params })
   }
 
