@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FractalRenderer, OCTAVES_DESKTOP, OCTAVES_MOBILE } from '../visual/FractalRenderer'
-import { HURST_MAX, HURST_MIN, NIGHT_MAX_BRIGHTNESS, VISUAL_PRESETS, WARP_MAX, WARP_MIN, sanitizeVisual, type Palette, type VisualSettings } from '../visual/fractalParams'
+import { HURST_MAX, HURST_MIN, NIGHT_MAX_BRIGHTNESS, VISUAL_PRESETS, WARP_MAX, WARP_MIN, motionScale, sanitizeVisual, type Palette, type VisualSettings } from '../visual/fractalParams'
 import { Slider } from './Slider'
 
 /** Tiempo para llegar a un preset nuevo (unos 3 s, según el plan). */
@@ -85,7 +85,7 @@ export function VisualMode(p: Props) {
       const cur = latest.current
       shown.current = settle(shown.current, cur.settings, 1 - Math.exp(-dt / SETTLE_TAU_SEC))
       const s = shown.current
-      acc += dt * s.speed * (reducedMotion() ? 0.1 : 1)
+      acc += dt * s.speed * motionScale(reducedMotion())
       const lung = cur.lungSource()
       renderer.render({ t: acc, lung: lung ?? 0.5, settings: s })
       if (ringEl.current) {
@@ -120,7 +120,7 @@ export function VisualMode(p: Props) {
       window.removeEventListener('resize', resize)
       renderer.dispose()
     }
-  }, [])
+  }, [fallback])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -152,3 +152,13 @@ Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
 - **Desvío:** la paleta no tiene selector propio: va con el preset visual, como en la tabla C4. Se añadirá si se pide.
 - **Prueba:** Chromium headless (SwiftShader): los controles, los seis presets y la barra de audio aparecen; el anillo queda oculto sin respiración; Esc y «Salir» cierran la vista; sin errores.
 - **Pendiente manual:** coincidencia de la respiración del fractal con las campanillas (<50 ms, grabando la pantalla).
+
+## Bloque C — Fase 13: seguridad visual
+- **Modulación del brillo:** el plan dice «como mucho un 6 %» y también pide que la oscilación total sea de 8 % como máximo. Con ±6 % la oscilación total sería 12 %, así que el brillo se modula ±3 % (oscilación total 6 %). Se cambió el shader y `cpuField.ts` a la vez.
+- **Copia en CPU** (`src/visual/cpuField.ts`): mismas fórmulas que el shader (hash entero, ruido quíntico, fBm, warp, paleta y brillo), con aritmética de 32 bits para el hash. Las diferencias con la GPU son de precisión (doble frente a float), no de fórmula.
+- **Prueba de destellos** (`tests/flicker.test.ts`): 64×64, 30 fps, 20 s, parámetros extremos (H = 0,40, deformación 4, velocidad 2, brillo 1, paleta de contraste alto) y respiración a 7 rpm. Resultado medido: el mayor cambio entre fotogramas consecutivos es 1,20 % (límite 2 %), y la oscilación total es 7,59 % (límite 8 %). El margen de la oscilación total es estrecho y se vigilará si se cambian parámetros.
+- **Límite de cambios bruscos:** ningún segundo tiene más de 3 saltos de más de un 2 %.
+- **Modo noche:** el brillo se limita al 35 % en `sanitizeVisual`. Probado.
+- **Movimiento reducido:** `motionScale` (×0,1) lo usa el componente. Probado como función.
+- **Aviso de fotosensibilidad:** se muestra la primera vez que se abre la vista (`binaural:visual-warning:v1`).
+- **Pendiente manual:** el parpadeo visual sobre un dispositivo real y el comportamiento con la respiración real (no se mide en la prueba con reloj simulado).

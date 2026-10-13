@@ -95,3 +95,6 @@ export const DEFAULT_VISUAL: VisualSettings = settingsFromPreset(VISUAL_PRESETS[
   night: false,
   seed: 7,
 })
+
+/** Velocidad efectiva con «reducir movimiento»: el fractal casi no se mueve (×0,1). */
+export const motionScale = (reducedMotion: boolean): number => (reducedMotion ? 0.1 : 1)

@@ -11,6 +11,7 @@ import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
   BREATH_SAFETY_KEY,
+  VISUAL_WARNING_KEY,
   ISO_WARNING_KEY,
   TIMER_OPTIONS_MIN,
   cleanPresetName,
@@ -27,6 +28,7 @@ import { BackgroundPanel } from './ui/BackgroundPanel'
 import { BreathPanel, type BreathSummaryData } from './ui/BreathPanel'
 import { PracticePanel, ResonanceTest } from './ui/PracticePanel'
 import { VisualMode } from './ui/VisualMode'
+import { VisualWarning } from './ui/VisualWarning'
 import { DEFAULT_VISUAL, VISUAL_PRESETS, settingsFromPreset, type VisualSettings } from './visual/fractalParams'
 import { breathState } from './dsp/breath'
 import { ExportPanel } from './ui/ExportPanel'
@@ -100,6 +102,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [error, setError] = useState<string | null>(null)
   const [showViz, setShowViz] = useState(false)
   const [visualOn, setVisualOn] = useState(false)
+  const [visualWarned, setVisualWarned] = useState(() => readFlag(VISUAL_WARNING_KEY))
+  const [visualWarnOpen, setVisualWarnOpen] = useState(false)
   const [visual, setVisual] = useState<VisualSettings>(DEFAULT_VISUAL)
   const [visualPreset, setVisualPreset] = useState<string | null>('relax-alpha')
   const visualOrigin = useRef(0) // reloj sin audio para la respiración en la vista fractal // opt-in en cada visita: más seguro con personas fotosensibles
@@ -429,12 +433,27 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         <button
           type="button"
           onClick={() => {
+            if (!visualWarned) {
+              setVisualWarnOpen(true)
+              return
+            }
             visualOrigin.current = performance.now()
             setVisualOn(true)
           }}
         >
           Vista fractal a pantalla completa
         </button>
+        {visualWarnOpen && (
+          <VisualWarning
+            onAccept={() => {
+              writeFlag(VISUAL_WARNING_KEY)
+              setVisualWarned(true)
+              setVisualWarnOpen(false)
+              visualOrigin.current = performance.now()
+              setVisualOn(true)
+            }}
+          />
+        )}
         {visualOn && (
           <VisualMode
             settings={visual}

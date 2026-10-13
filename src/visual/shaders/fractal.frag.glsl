@@ -76,7 +76,7 @@ void main() {
 
   float t = 0.5 + 0.9 * v + 0.25 * (length(q) - 0.5) + 0.15 * r.x;
   vec3 col = u_pal[0] + u_pal[1] * cos(6.28318 * (u_pal[2] * t + u_pal[3]));
-  // Brillo: el aliento lo modula como mucho un 6 %
-  float bright = u_brightness * (1.0 + 0.12 * breath);
+  // Brillo: el aliento lo modula ±3 % (oscilación total 6 %, dentro del límite del 8 % del plan)
+  float bright = u_brightness * (1.0 + 0.06 * breath);
   fragColor = vec4(clamp(col * bright, 0.0, 1.0), 1.0);
 }

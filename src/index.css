@@ -842,3 +842,27 @@ input[type='number'] {
     animation: none;
   }
 }
+
+/* Aviso de primer uso de la vista fractal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-card {
+  max-width: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.modal-card button {
+  min-height: 44px;
+  padding: 0 16px;
+}
