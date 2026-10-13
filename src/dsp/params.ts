@@ -1,10 +1,24 @@
-import { DEFAULT_PARAMS, type BeatMode, type EngineParams, type NatureType, type NoiseType } from './types'
+import {
+  DEFAULT_PARAMS,
+  type BeatMode,
+  type EngineParams,
+  type MeditationType,
+  type NatureType,
+  type NoiseType,
+} from './types'
 
 export const MODES: readonly BeatMode[] = ['binaural', 'monaural', 'isochronic']
 export const NATURE_TYPES: readonly NatureType[] = ['rain', 'wind', 'storm', 'river', 'forest']
-export const NOISE_TYPES: readonly NoiseType[] = ['none', 'white', 'pink', 'brown', ...NATURE_TYPES]
+export const MEDITATION_TYPES: readonly MeditationType[] = ['bowls', 'om']
+/** Todos los fondos generados por síntesis, en el orden en que los guarda el motor. */
+export const GENERATED_TYPES: readonly (NatureType | MeditationType)[] = [...NATURE_TYPES, ...MEDITATION_TYPES]
+export const NOISE_TYPES: readonly NoiseType[] = ['none', 'white', 'pink', 'brown', ...GENERATED_TYPES]
 
 export const isNature = (t: NoiseType): t is NatureType => (NATURE_TYPES as readonly string[]).includes(t)
+export const isMeditation = (t: NoiseType): t is MeditationType => (MEDITATION_TYPES as readonly string[]).includes(t)
+/** Cualquier fondo que no sea silencio ni ruido (blanco, rosa, marrón). */
+export const isGenerated = (t: NoiseType): t is NatureType | MeditationType =>
+  (GENERATED_TYPES as readonly string[]).includes(t)
 
 /** Techo duro del volumen general (§5 del plan). */
 export const MASTER_CEILING = 0.8

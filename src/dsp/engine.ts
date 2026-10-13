@@ -1,15 +1,19 @@
 import { IsoEnvelope } from './envelope'
 import { loudnessCompGain } from './loudness'
+import { BowlsGen, OmGen } from './meditation'
 import { ForestGen, RainGen, RiverGen, StormGen, WindGen, type NatureGen } from './nature'
 import { NoiseGenerator } from './noise'
 import { Oscillator, TWO_PI } from './oscillator'
-import { MASTER_CEILING, NATURE_TYPES, sanitizeParams } from './params'
+import { GENERATED_TYPES, MASTER_CEILING, sanitizeParams } from './params'
 import { evalProgram, type ProgramValue } from './program'
 import { Smoother } from './smoothing'
 import { DEFAULT_PARAMS, type EngineParams, type Program } from './types'
 
 /** Muestras por paso de control (parámetros lentos: programa, temporizador, compensación). */
 const CONTROL_BLOCK = 128
+
+/** Número de fondos sintetizados (naturaleza + meditación). */
+const GENERATED_COUNT = GENERATED_TYPES.length
 
 const TAU_GAIN = 0.05 // s
 const TAU_USER_FREQ = 2 // s, cambios de beat/portadora hechos por el usuario
@@ -76,7 +80,7 @@ export class DspEngine {
   private readonly wWhite: Smoother
   private readonly wPink: Smoother
   private readonly wBrown: Smoother
-  /** Pesos y generadores de los sonidos de la naturaleza, en el orden de NATURE_TYPES. */
+  /** Pesos y generadores de los fondos sintetizados (naturaleza y meditación), en el orden de GENERATED_TYPES. */
   private readonly wNature: Smoother[]
   private readonly nature: NatureGen[]
 
@@ -104,8 +108,10 @@ export class DspEngine {
       new StormGen(rand, fs),
       new RiverGen(rand, fs),
       new ForestGen(rand, fs),
+      new BowlsGen(rand, fs),
+      new OmGen(rand, fs),
     ]
-    this.wNature = NATURE_TYPES.map(() => new Smoother(0, TAU_GAIN, fs))
+    this.wNature = GENERATED_TYPES.map(() => new Smoother(0, TAU_GAIN, fs))
 
     const p = this.params
     this.carrier = new Smoother(p.carrierHz, TAU_USER_FREQ, fs)
@@ -139,7 +145,7 @@ export class DspEngine {
     this.wWhite.target = n === 'white' ? 1 : 0
     this.wPink.target = n === 'pink' ? 1 : 0
     this.wBrown.target = n === 'brown' ? 1 : 0
-    NATURE_TYPES.forEach((t, i) => ((this.wNature[i] as Smoother).target = n === t ? 1 : 0))
+    GENERATED_TYPES.forEach((t, i) => ((this.wNature[i] as Smoother).target = n === t ? 1 : 0))
   }
 
   private setFreqTau(tau: number): void {
@@ -313,7 +319,7 @@ export class DspEngine {
         this.wWhite.next() * this.noise.white +
         this.wPink.next() * this.noise.pink +
         this.wBrown.next() * this.noise.brown
-      for (let k = 0; k < 5; k++) {
+      for (let k = 0; k < GENERATED_COUNT; k++) {
         const w = (this.wNature[k] as Smoother).next()
         if (w > 1e-4) bg += w * (this.nature[k] as NatureGen).next()
       }

@@ -1,4 +1,4 @@
-import { isNature } from './dsp/params'
+import { isGenerated } from './dsp/params'
 import type { BeatMode, NoiseType, Preset, Program } from './dsp/types'
 import { bandFor } from './bands'
 
@@ -18,6 +18,8 @@ export const NOISE_LABELS: Record<NoiseType, string> = {
   storm: 'Tormenta',
   river: 'Río',
   forest: 'Bosque',
+  bowls: 'Cuencos tibetanos',
+  om: 'Om (voz sintética)',
 }
 
 const MIN = 60
@@ -90,7 +92,7 @@ export function describePreset(p: Preset): string {
   }
   const noise = p.params.noiseType ?? 'none'
   if (noise !== 'none') {
-    parts.push(isNature(noise) ? NOISE_LABELS[noise].toLowerCase() : `ruido ${NOISE_LABELS[noise].toLowerCase()}`)
+    parts.push(isGenerated(noise) ? NOISE_LABELS[noise].toLowerCase() : `ruido ${NOISE_LABELS[noise].toLowerCase()}`)
   }
   if (p.suggestedMinutes !== null) parts.push(`${p.suggestedMinutes} min`)
   return parts.join(' · ')

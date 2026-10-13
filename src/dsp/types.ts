@@ -1,7 +1,9 @@
 export type BeatMode = 'binaural' | 'monaural' | 'isochronic'
-export type NoiseType = 'none' | 'white' | 'pink' | 'brown' | NatureType
+export type NoiseType = 'none' | 'white' | 'pink' | 'brown' | NatureType | MeditationType
 /** Sonidos de la naturaleza sintetizados (sin grabaciones). */
 export type NatureType = 'rain' | 'wind' | 'storm' | 'river' | 'forest'
+/** Sonidos de meditación sintetizados (sin grabaciones): cuencos tibetanos y un «Om» coral. */
+export type MeditationType = 'bowls' | 'om'
 
 export interface EngineParams {
   mode: BeatMode

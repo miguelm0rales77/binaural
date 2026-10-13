@@ -49,7 +49,7 @@ export const ABOUT = {
       heading: 'Qué hace esta aplicación',
       paragraphs: [
         'Genera en tu dispositivo, en tiempo real, tonos con un pulso regular. En el modo binaural cada oído recibe un tono ligeramente distinto y el pulso se percibe por la diferencia (hacen falta auriculares). En el monaural los dos tonos se mezclan antes de llegar al oído. En el isocrónico un solo tono sube y baja de volumen a un ritmo regular.',
-        'Como fondo puedes elegir ruido blanco, rosa o marrón, o sonidos de la naturaleza (lluvia, viento, tormenta, río, bosque). Estos últimos se generan por síntesis y suenan artificiales: no son grabaciones.',
+        'Como fondo puedes elegir ruido blanco, rosa o marrón, o sonidos de la naturaleza (lluvia, viento, tormenta, río, bosque) o de meditación (cuencos tibetanos y un «Om» coral). Estos últimos se generan por síntesis y suenan artificiales: no son grabaciones.',
         'Todo se calcula localmente: no usa grabaciones, cuentas ni analítica, y no envía ningún dato.',
       ],
     },

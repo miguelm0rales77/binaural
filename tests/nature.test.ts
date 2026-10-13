@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DspEngine } from '../src/dsp/engine'
 import { ForestGen, RainGen, RiverGen, StormGen, Thunder, WindGen, type NatureGen } from '../src/dsp/nature'
 import { mulberry32 } from '../src/dsp/noise'
-import { NATURE_TYPES, NOISE_TYPES, defaultParams, isNature, sanitizeParams } from '../src/dsp/params'
+import { GENERATED_TYPES, MEDITATION_TYPES, NATURE_TYPES, NOISE_TYPES, defaultParams, isNature, sanitizeParams } from '../src/dsp/params'
 import { DEFAULT_PARAMS } from '../src/dsp/types'
 import { describePreset } from '../src/presets'
 import { ABOUT, FIRST_USE } from '../src/texts'
@@ -166,14 +166,15 @@ describe('truenos suaves', () => {
 
 describe('integración en el motor y en los parámetros', () => {
   it('todos los fondos están registrados y se aceptan; uno desconocido se rechaza', () => {
-    expect(NOISE_TYPES).toEqual(['none', 'white', 'pink', 'brown', 'rain', 'wind', 'storm', 'river', 'forest'])
+    expect(NOISE_TYPES).toEqual(['none', 'white', 'pink', 'brown', 'rain', 'wind', 'storm', 'river', 'forest', 'bowls', 'om'])
+    expect(GENERATED_TYPES).toEqual([...NATURE_TYPES, ...MEDITATION_TYPES])
     for (const t of NOISE_TYPES) expect(sanitizeParams(defaultParams(), { noiseType: t }).noiseType).toBe(t)
     expect(sanitizeParams(defaultParams(), { noiseType: 'trueno' }).noiseType).toBe(DEFAULT_PARAMS.noiseType)
     expect(NATURE_TYPES.every(isNature)).toBe(true)
     expect(isNature('pink')).toBe(false)
   })
 
-  it.each(NATURE_TYPES)('el motor reproduce %s (solo fondo) y se calla al volver a «ninguno»', (type) => {
+  it.each(GENERATED_TYPES)('el motor reproduce %s (solo fondo) y se calla al volver a «ninguno»', (type) => {
     const e = new DspEngine(
       FS,
       { toneGain: 0, noiseType: type, noiseGain: 1, masterGain: 0.8 },
@@ -185,7 +186,7 @@ describe('integración en el motor y en los parámetros', () => {
       e.renderBlock(L, new Float32Array(FS * s), FS * s)
       return L
     }
-    expect(rms(sec(2))).toBeGreaterThan(0.005)
+    expect(rms(sec(8))).toBeGreaterThan(0.005) // los cuencos tardan 1,5–3 s en dar su primer golpe
     e.setParams({ noiseType: 'none' })
     sec(1) // fundido de 50 ms + margen
     expect(rms(sec(1))).toBe(0)

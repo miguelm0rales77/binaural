@@ -13,10 +13,10 @@ export interface NatureGen {
 
 type Rand = () => number
 
-const noise = (rand: Rand) => rand() * 2 - 1
+export const noise = (rand: Rand) => rand() * 2 - 1
 
 /** Filtro paso bajo de un polo. */
-class LP {
+export class LP {
   private y = 0
   private readonly a: number
   constructor(cutHz: number, fs: number) {
@@ -29,7 +29,7 @@ class LP {
 }
 
 /** Filtro paso alto de un polo. */
-class HP {
+export class HP {
   private readonly lp: LP
   constructor(cutHz: number, fs: number) {
     this.lp = new LP(cutHz, fs)
@@ -40,7 +40,7 @@ class HP {
 }
 
 /** Paso banda SVF (TPT): estable aunque se module la frecuencia; ganancia ≈ 1 en el centro. */
-class BandPass {
+export class BandPass {
   private ic1 = 0
   private ic2 = 0
   private readonly pi_fs: number
@@ -63,7 +63,7 @@ class BandPass {
 }
 
 /** Valor aleatorio lento en [-1, 1]: salta a un objetivo nuevo unas `rateHz` veces por segundo y lo sigue suavemente. */
-class SlowRandom {
+export class SlowRandom {
   value = 0
   private target = 0
   private left = 0

@@ -2,7 +2,7 @@
 
 Aplicación web instalable (PWA) que genera en tu dispositivo, en tiempo real, tonos con un pulso regular:
 **binaurales**, **monaurales** e **isocrónicos**, con ruido de fondo (blanco, rosa, marrón) o sonidos de la
-naturaleza sintetizados (lluvia, viento, tormenta, río, bosque). Incluye presets, un programa que cambia de
+naturaleza (lluvia, viento, tormenta, río, bosque) o de meditación (cuencos tibetanos y un «Om» coral), todos sintetizados. Incluye presets, un programa que cambia de
 frecuencia con el tiempo («Pre-sueño»), temporizador, exportación a WAV y un modo de reproducción en
 segundo plano para iPhone.
 

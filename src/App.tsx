@@ -3,7 +3,7 @@ import { AudioController, type StateInfo } from './audio/AudioController'
 import { BackgroundPlayer, type BackgroundState } from './audio/BackgroundPlayer'
 import { bandFor } from './bands'
 import type { EngineParams, NoiseType, Preset, Program } from './dsp/types'
-import { MASTER_CEILING, NATURE_TYPES, RANGES, isNature, sanitizeParams } from './dsp/params'
+import { MASTER_CEILING, MEDITATION_TYPES, NATURE_TYPES, RANGES, isMeditation, isNature, sanitizeParams } from './dsp/params'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
@@ -359,11 +359,27 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
                 </option>
               ))}
             </optgroup>
+            <optgroup label="Meditación">
+              {MEDITATION_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {NOISE_LABELS[t]}
+                </option>
+              ))}
+            </optgroup>
           </select>
           {isNature(params.noiseType) && (
             <small>
               Sonido generado por síntesis (no es una grabación) y siempre suave, sin picos repentinos.
               {params.noiseType === 'storm' && ' Incluye truenos lejanos y espaciados.'}
+            </small>
+          )}
+          {isMeditation(params.noiseType) && (
+            <small>
+              Sonido generado por síntesis (no es una grabación): suena artificial.
+              {params.noiseType === 'bowls'
+                ? ' Un cuenco suena cada 7–16 s, con entrada suave.'
+                : ' Un coro grave canta «Om» en ciclos de unos 15 s.'}{' '}
+              Es un fondo con tono: puede batir con la portadora; si molesta, cambia una de las dos.
             </small>
           )}
         </div>
