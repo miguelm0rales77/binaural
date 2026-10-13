@@ -50,11 +50,12 @@ export interface CustomTiming {
   holdOutSec: number
 }
 
-export const CUSTOM_LIMITS = { breathSec: { min: 1, max: 20 }, holdSec: { min: 0, max: 10 }, cycleSec: { min: 5, max: 20 } }
+/** Límites del editor. El ciclo mínimo de 5 s (12 rpm) evita respirar de más; el resto no tiene límite médico. */
+export const CUSTOM_LIMITS = { breathSec: { min: 1, max: 60 }, holdSec: { min: 0, max: 10 }, cycleSec: { min: 5, max: 60 } }
 
 /**
  * Convierte los tiempos del editor en un patrón. Devuelve el texto del error si los tiempos no sirven:
- * el ciclo completo debe durar entre 5 y 20 s (3–12 rpm) y la proporción inspiración/espiración entre 1:4 y 4:1.
+ * el ciclo completo debe durar entre 5 y 60 s (1–12 rpm) y la proporción inspiración/espiración entre 1:4 y 4:1.
  */
 export function customPattern(t: CustomTiming): { pattern: BreathPattern } | { error: string } {
   const { breathSec, holdSec } = CUSTOM_LIMITS

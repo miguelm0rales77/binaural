@@ -40,7 +40,8 @@ describe('patrón personalizado', () => {
 
   it.each([
     [{ inhaleSec: 1, holdInSec: 0, exhaleSec: 10, holdOutSec: 0 }, '1:4'],
-    [{ inhaleSec: 4, holdInSec: 0, exhaleSec: 20, holdOutSec: 0 }, 'ciclo'],
+    [{ inhaleSec: 30, holdInSec: 0, exhaleSec: 31, holdOutSec: 0 }, 'ciclo'],
+    [{ inhaleSec: 4, holdInSec: 0, exhaleSec: 0.5, holdOutSec: 0 }, 'espiración'],
     [{ inhaleSec: 4, holdInSec: 11, exhaleSec: 4, holdOutSec: 0 }, 'retención'],
     [{ inhaleSec: 0, holdInSec: 0, exhaleSec: 6, holdOutSec: 0 }, 'inspiración'],
   ])('rechaza %j', (timing, word) => {
@@ -71,5 +72,14 @@ describe('precisión fina', () => {
     expect(r.pattern.rpm).toBeCloseTo(60 / 10.5, 10)
     expect(r.pattern.inhaleRatio).toBeCloseTo(4.3 / 10, 10)
     expect(r.pattern.holdInSec).toBe(0.5)
+  })
+})
+
+describe('límites del editor', () => {
+  it('sin el límite de 20 s: una espiración de 30 s y un ciclo de 40 s son válidos (1,5 rpm)', () => {
+    const r = customPattern({ inhaleSec: 10, holdInSec: 0, exhaleSec: 30, holdOutSec: 0 })
+    if (!('pattern' in r)) throw new Error(r.error)
+    expect(r.pattern.rpm).toBeCloseTo(60 / 40, 10)
+    expect(r.pattern.inhaleRatio).toBeCloseTo(0.25, 10)
   })
 })

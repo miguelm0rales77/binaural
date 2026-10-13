@@ -194,3 +194,9 @@
 - **Ritmo de resonancia:** el deslizador pasa de pasos de 0,5 rpm a pasos de **0,1 rpm** (el plan decía 0,5). La frecuencia de resonancia individual no tiene por qué caer en un valor de medio punto.
 - **Editor personalizado:** los cuatro tiempos admiten **décimas de segundo** (paso 0,1 s). Sin cambios en los límites: inspiración y espiración de 1 a 20 s, retenciones de 0 a 10 s, ciclo de 5 a 20 s.
 - Comprobado en el navegador: el deslizador da 5,3 rpm (inspiración 4,5 s, espiración 6,8 s) y el editor aplica 4,3 s y 5,7 s sin error (ciclo de 10 s, 6,0 rpm). Test de `customPattern` con décimas en `tests/breath-presets.test.ts`.
+
+## Fase 9 (ajuste 2) — límites del editor personalizado
+- **Origen del límite de 20 s:** el plan fija el modo personalizado en 3–12 rpm (§B2), y 3 rpm son ciclos de 20 s. Se trasladó sin una razón propia. No protege de nada concreto.
+- **Qué se mantiene:** el ciclo mínimo de 5 s (12 rpm). Es el que evita respirar de más (mareo, hormigueo), que es el riesgo real que cita el plan.
+- **Qué cambia:** inspiración y espiración de 1 a **60 s**; ciclo de 5 a **60 s** (1–12 rpm, `sanitizeBreathPattern` acepta desde 1 rpm).
+- **Retenciones:** siguen en 0–10 s. Una retención larga puede causar mareo o pérdida de conocimiento, así que es el límite que se conserva.
