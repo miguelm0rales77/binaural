@@ -42,6 +42,27 @@ export const BREATH_TEXT = {
     'No hagas estas respiraciones, sobre todo las retenciones, mientras haces actividades en las que perder el conocimiento podría ponerte en peligro: nadar o estar en el agua, conducir, manejar maquinaria o subir a una escalera.',
 } as const
 
+/** Aviso de fotosensibilidad de la vista fractal: se muestra la primera vez que se abre (§C2.5). */
+export const FIRST_USE_VISUAL = {
+  title: 'Antes de usar la vista fractal',
+  text: 'La imagen cambia de color y de forma muy despacio, sin destellos y sin seguir el pulso del audio. Aun así, si tienes epilepsia o eres sensible a la luz, no la uses. Sal con el botón «Salir» o con la tecla Esc.',
+  button: 'Entendido',
+} as const
+
+/** Etiquetas de la vista fractal. */
+export const VISUAL_LABELS = {
+  night: 'Modo noche',
+  palettes: {
+    calm: 'Verdes y azules suaves',
+    focus: 'Neutra, de bajo contraste',
+    depth: 'Azul profundo y violeta',
+    night: 'Ámbar oscuro',
+    neutral: 'Neutra',
+    teal: 'Verde azulado suave',
+  },
+  staticHint: 'La imagen no parpadea ni sigue al pulso del audio: solo puede seguir la respiración, que es muy lenta.',
+} as const
+
 export const ISO_FAST_WARNING = {
   text: 'Los pulsos isocrónicos rápidos (13–40 Hz) se perciben como un parpadeo de volumen intenso. Empieza con volumen bajo y detén el sonido si notas molestias. Evítalos si tienes epilepsia o crisis desencadenadas por sonidos.',
   button: 'Entendido',

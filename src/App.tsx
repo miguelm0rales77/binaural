@@ -26,6 +26,8 @@ import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
 import { BreathPanel, type BreathSummary } from './ui/BreathPanel'
 import { PracticePanel } from './ui/PracticePanel'
+import { VisualMode } from './ui/VisualMode'
+import { visualPresetFor, type VisualPreset } from './visual/params'
 import { ResonanceTest } from './ui/ResonanceTest'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
@@ -99,6 +101,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [error, setError] = useState<string | null>(null)
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
   const [summary, setSummary] = useState<BreathSummary | null>(null)
+  const [visual, setVisual] = useState<VisualPreset | null>(null)
   // Patrón de la sesión en curso si la respiración estaba activa al empezar, y último tiempo informado por el motor.
   const sessionBreath = useRef<{ pattern: BreathPattern; label: string } | null>(null)
   const [practice, setPractice] = useState<PracticeEntry[]>(() => loadPractice())
@@ -351,6 +354,18 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         {showViz && <Pulse mode={params.mode} beatHz={shownBeat} depth={params.isoDepth} active={live} />}
       </section>
 
+      <section className="visual-entry" aria-labelledby="visual-title">
+        <p className="eyebrow">Visualización · Pantalla completa</p>
+        <h2 id="visual-title">Vista fractal</h2>
+        <p className="muted">
+          Un campo fractal que cambia muy despacio, sin destellos y sin seguir el pulso del audio. Si la respiración
+          guiada está activa, sigue su ritmo. El audio sigue sonando debajo.
+        </p>
+        <button type="button" className="secondary" onClick={() => setVisual(visualPresetFor(activeId))}>
+          Abrir la vista fractal
+        </button>
+      </section>
+
       <PresetPicker
         builtIn={PRESETS}
         user={userPresets}
@@ -554,6 +569,18 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       />
 
       <PracticePanel entries={practice} goalMin={goal} today={localDate()} onGoalChange={setGoal} />
+
+      {visual && (
+        <VisualMode
+          initial={visual}
+          playing={status === 'playing'}
+          breathOn={params.breath.enabled}
+          pattern={params.breath.pattern}
+          clock={breathClock}
+          onTogglePlay={toggle}
+          onClose={() => setVisual(null)}
+        />
+      )}
 
       <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />
 

@@ -1059,3 +1059,94 @@ progress::-moz-progress-bar {
 .resonance-result ul {
   padding-left: 1.2rem;
 }
+
+/* Vista fractal (Bloque C): pantalla completa sobre el reproductor. Sin destellos; la oscuridad es el fondo. */
+.visual-entry {
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  display: grid;
+  gap: 0.75rem;
+}
+.visual-entry h2 {
+  margin: 0;
+}
+.visual {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #0b1512;
+  color: var(--csb-crema);
+  overflow: hidden;
+}
+.visual-canvas,
+.visual-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Alternativa sin WebGL2: un color plano que cambia muy despacio (sin degradados: la marca no los usa). */
+.visual-fallback {
+  background: #1d342e;
+  animation: visual-drift 60s ease-in-out infinite;
+}
+@keyframes visual-drift {
+  0%,
+  100% {
+    background: #1d342e;
+  }
+  50% {
+    background: #2a4a40;
+  }
+}
+/* Anillo de respiración: escala con el llenado pulmonar (JavaScript); no parpadea. */
+.visual-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: min(60vmin, 420px);
+  aspect-ratio: 1;
+  border: 2px solid rgba(250, 245, 239, 0.55);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(0.6);
+}
+.visual-bar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+.visual-bar .secondary {
+  background: rgba(15, 25, 22, 0.8);
+  color: var(--csb-crema);
+  border-color: rgba(250, 245, 239, 0.4);
+}
+.visual-controls {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  right: 12px;
+  max-width: 420px;
+  max-height: 55vh;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(15, 25, 22, 0.88);
+  display: grid;
+  gap: 0.5rem;
+  z-index: 2;
+}
+.visual-controls .field,
+.visual-controls .check,
+.visual-controls .muted,
+.visual-controls label {
+  color: var(--csb-crema);
+}

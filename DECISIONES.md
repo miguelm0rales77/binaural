@@ -226,3 +226,41 @@
 - **Límites del ritmo en el motor:** 1–30 rpm y retenciones de hasta 60 s (límites técnicos). Las limitaciones de seguridad siguen en el editor.
 - **Verificado:** 219 tests en verde. En el navegador: el registro muestra correctamente hoy, la racha y las barras con datos de prueba; «Mi frecuencia» arranca en el escalón 1 (6,5 rpm) con el círculo moviéndose.
 - **Sin verificar:** el recorrido completo de 14 min en el navegador (el navegador solo avanza los fotogramas con la pestaña visible; con el panel oculto la prueba queda parada, sin error de la app), la exportación CSV descargada y la puntuación real de un escalón en pantalla.
+
+## Bloque C — visualización fractal (Fases 11–14)
+### Fase 11 — renderizador base
+- **WebGL2 sin librerías:** un triángulo que cubre la pantalla y el shader `src/visual/shaders/fractal.frag.glsl` (importado con `?raw`). El shader replica `src/visual/cpuField.ts` línea por línea (hash entero, ruido de gradiente con interpolación quíntica, fBm con rotación de 37° y lacunaridad 2, domain warping de tres niveles y paleta coseno). Los tests miden la copia CPU.
+- **Interpolación de parámetros:** τ = 1 s, así que a los 3 s está al 95 % del cambio de preset (`approach`, testado).
+- **Pausa y calidad:** se detiene con la pestaña oculta. Resolución base `min(dpr, 1,5) × 0,6`; si la media de 2 s baja de 50 fps, pasa al 45 % de esa resolución y se quita una octava (6 en escritorio, 5 en móvil). Solo degrada, no sube (`QualityGovernor`, testado).
+- **Movimiento reducido:** con `prefers-reduced-motion`, la velocidad es ×0,1.
+- **Alternativa sin WebGL2: desviación del plan.** El plan pide un degradado CSS lento, pero la marca prohíbe los degradados. Se usa un color plano que cambia muy despacio (60 s por ciclo).
+- **Sin verificar:** 60 fps en portátil y 50 fps en iPhone (solo se ha probado en Chromium, en el navegador de la app).
+
+### Fase 12 — presets, paletas, controles y respiración
+- **Presets de §C4** con su paleta, H, warp y velocidad. Pre-sueño es modo noche (paleta cálida y brillo ≤ 35 %). El preset visual sigue al preset de audio activo.
+- **Paleta «Relajación»:** la primera definición salía marrón (medias: r 0,45, g 0,50, b 0,50). Se ajustó para que sea verde azulada (r 0,14, g 0,30, b 0,38) y se comprobó en pantalla. El resto de paletas coinciden con su nombre.
+- **Controles avanzados:** preset, Hurst (0,5–0,9), warp (0–4), velocidad, brillo, paleta y modo noche.
+- **Respiración:** `u_lung` viene del mismo reloj del motor que el círculo de «Respirar». Sin audio sonando, u_lung = 0,5 (no hay reloj). Por eso el preset «Respiración (sin audio)» no respira: solo tiene su paleta.
+- **Anillo de respiración:** es un anillo discreto dentro de la vista, no el círculo de «Respirar» convertido en anillo. Desviación menor.
+
+### Fase 13 — seguridad visual (`tests/visual-safety.test.ts`)
+- **Medido:** 64 × 64 px, 30 fps, 20 s, parámetros extremos (H 0,9, warp 4, brillo 1), respiración a 7 rpm.
+  - Mayor cambio de luminancia media entre fotogramas consecutivos: **0,21 %** (límite 2 %) ✓.
+  - Oscilación sin respiración: **0,32 %** ✓.
+  - Con respiración: **12,07 % pico a pico**. Pasa al límite fijado por el plan del brillo (±6 %), pero no al límite de 8 % del §C2.1.
+- **Interpretación tomada:** el §C2.1 limita la oscilación *por encima de 0,3 Hz*. La respiración va a 0,12 Hz y el brillo se modula ±6 % por el §C3, así que esa oscilación queda fuera del límite del 8 %. **Esto necesita tu confirmación.** Si no, habría que bajar la modulación por respiración.
+- **Limitación del test:** la comprobación «no sigue el pulso» es casi trivial, porque `fieldAt` no recibe ningún parámetro de pulso.
+
+### Fase 14 — dimensión fractal (`tests/boxcount.test.ts`): **pendiente de decisión**
+- **Método tal como lo pide el plan:** campo de 1024 × 1024 con la misma escala que el shader (3 unidades de altura), umbral en la mediana, borde con vecindad 4, cajas de 2 a 256 px, mínimo sobre 4 desplazamientos de rejilla, D = −pendiente de log N(s) frente a log s.
+- **Resultado (H, warp 2,5, 6 octavas):** D(0,4) = 1,95; D(0,65) = 1,83; D(0,9) = 1,68.
+  - **El orden sí se cumple:** D(0,4) > D(0,65) > D(0,9).
+  - **El rango no se cumple:** ningún preset cae en 1,25–1,55 (el de H 0,65 da 1,83). Ni siquiera subiendo H a 0,9 se llega.
+- **Lo que mueve D (exploración en 512 px, método igual):**
+  - Octavas (H 0,65, warp 2,5): 2 → 1,45; 3 → 1,57; 4 → 1,69; 6 → 1,83. Ojo: este barrido es a 512 px, así que los valores absolutos cambian algo respecto a 1024 px.
+  - Warp (3 octavas, H 0,8): 1,5 → 1,50; 2,5 → 1,69; 3,0 → 1,76. **El warp pesa más que H.**
+- **Conclusión:** en este modelo el plan no es consistente: con 6 octavas y los warp de §C4, el contorno tiene D ≈ 1,8 y no 2 − H ≈ 1,35. Para llegar a 1,25–1,55 hay que tocar octavas, warp o escala. Son cambios visibles. **Opciones:**
+  1. Bajar a 2–3 octavas en los presets (menos detalle, más suave).
+  2. Bajar el warp de los presets (cambia el carácter de la imagen).
+  3. Aceptar D fuera de rango y documentar que el plan se refiere a otra medida.
+- Hasta que decidas, la prueba de rangos está en `it.skip` con el motivo en el código. El orden de D sí sigue activo.
