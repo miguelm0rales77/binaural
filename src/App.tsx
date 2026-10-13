@@ -27,7 +27,8 @@ import { BackgroundPanel } from './ui/BackgroundPanel'
 import { BreathPanel, type BreathSummaryData } from './ui/BreathPanel'
 import { PracticePanel, ResonanceTest } from './ui/PracticePanel'
 import { VisualMode } from './ui/VisualMode'
-import { DEFAULT_VISUAL } from './visual/fractalParams'
+import { DEFAULT_VISUAL, VISUAL_PRESETS, settingsFromPreset, type VisualSettings } from './visual/fractalParams'
+import { breathState } from './dsp/breath'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
@@ -98,7 +99,10 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [info, setInfo] = useState<StateInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showViz, setShowViz] = useState(false)
-  const [visualOn, setVisualOn] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
+  const [visualOn, setVisualOn] = useState(false)
+  const [visual, setVisual] = useState<VisualSettings>(DEFAULT_VISUAL)
+  const [visualPreset, setVisualPreset] = useState<string | null>('relax-alpha')
+  const visualOrigin = useRef(0) // reloj sin audio para la respiración en la vista fractal // opt-in en cada visita: más seguro con personas fotosensibles
   const [breathSafetySeen, setBreathSafetySeen] = useState(() => readFlag(BREATH_SAFETY_KEY))
   const [summary, setSummary] = useState<BreathSummaryData | null>(null)
   // Datos de la sesión en curso, para el resumen y el registro al terminar (el callback de parada no ve el estado actual).
@@ -218,6 +222,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     setProgram(p.program ?? null)
     setActiveId(p.id)
     setTimerMin(p.suggestedMinutes)
+    if (VISUAL_PRESETS.some((v) => v.id === p.id)) applyVisualPreset(p.id)
     const c = controller.current
     if (c && status === 'playing') {
       // Todo se aplica con los suavizados del motor. Primero los parámetros (cancelan el programa
@@ -346,6 +351,20 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       .catch((e) => setBgError(e instanceof Error ? e.message : String(e)))
   }
 
+  /** Pulmón para la vista: del reloj de audio si suena; si no, de un reloj sin audio. null sin respiración. */
+  const visualLung = (): number | null => {
+    if (!params.breath.enabled) return null
+    const t = status === 'playing' ? controller.current?.breathTimeSec() ?? null : (performance.now() - visualOrigin.current) / 1000
+    return t === null ? null : breathState(t, params.breath.pattern).lung
+  }
+
+  const applyVisualPreset = (id: string) => {
+    const vp = VISUAL_PRESETS.find((v) => v.id === id)
+    if (!vp) return
+    setVisualPreset(id)
+    setVisual((cur) => settingsFromPreset(vp, cur))
+  }
+
   const busy = status === 'starting' || status === 'stopping'
   const label = status === 'playing' ? 'Detener' : status === 'stopping' ? 'Deteniendo…' : 'Reproducir'
   const live = status === 'playing' && info !== null
@@ -407,10 +426,32 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
           </span>
         </label>
         {showViz && <Pulse mode={params.mode} beatHz={shownBeat} depth={params.isoDepth} active={live} />}
-        <button type="button" onClick={() => setVisualOn(true)}>
+        <button
+          type="button"
+          onClick={() => {
+            visualOrigin.current = performance.now()
+            setVisualOn(true)
+          }}
+        >
           Vista fractal a pantalla completa
         </button>
-        {visualOn && <VisualMode settings={DEFAULT_VISUAL} lungSource={() => null} onClose={() => setVisualOn(false)} />}
+        {visualOn && (
+          <VisualMode
+            settings={visual}
+            onChange={setVisual}
+            lungSource={visualLung}
+            ring={params.breath.enabled}
+            audio={{
+              label: status === 'playing' ? 'Detener' : 'Reproducir',
+              disabled: !accepted || busy,
+              onToggle: () => void toggle(),
+              status: status === 'playing' ? (live ? `Sonando · ${mmss(info.elapsedSec)}` : 'Sonando') : 'Parado',
+            }}
+            onClose={() => setVisualOn(false)}
+            presetId={visualPreset}
+            onPreset={applyVisualPreset}
+          />
+        )}
       </section>
 
       <PresetPicker

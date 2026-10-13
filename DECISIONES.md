@@ -141,3 +141,14 @@ Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
 - **Alternativa sin WebGL2:** degradado CSS lento que solo cambia de posición; se desactiva con `prefers-reduced-motion`.
 - **Comprobación:** Chromium headless (SwiftShader) compila el shader y dibuja sin errores; la captura muestra el campo con la paleta. Los 60 fps en portátil y 50 fps en iPhone son medidas manuales, pendientes.
 - **Nota de tipos:** `erasableSyntaxOnly` prohíbe las propiedades de parámetro, así que el canvas se guarda en un campo explícito.
+
+## Bloque C — Fase 12: presets visuales, controles y respiración
+- **Pantalla:** la vista fractal es una capa a pantalla completa dentro de la misma página (como «Respirar»), con la barra de audio (Reproducir/Detener) y «Salir» arriba.
+- **Reloj de la respiración:** con audio, el del contexto (`breathTimeSec`), así que el anillo sigue al de las campanillas. Sin audio, un reloj monotónico (`performance.now`) que empieza al abrir la vista; es solo visual, y el plan lo pide para «Respiración (sin audio)». No se usa `Date.now`.
+- **Anillo:** un círculo que crece y decrece con el pulmón (CSS, sin destellos). Solo aparece con la respiración activada.
+- **Presets visuales:** la tabla C4 completa. Cargar un preset de audio con el mismo id cambia también el visual.
+- **Interpolación:** los parámetros se acercan al objetivo con una constante de 1 s (≈95 % en 3 s). La paleta se interpola componente a componente. La semilla («Nueva forma») cambia de golpe, porque es una acción explícita.
+- **Controles:** H (0,40–0,90, más amplio que los presets), deformación (0–4), velocidad (0–2× con dt acumulado), brillo (con tope del 35 % en modo noche) y modo noche.
+- **Desvío:** la paleta no tiene selector propio: va con el preset visual, como en la tabla C4. Se añadirá si se pide.
+- **Prueba:** Chromium headless (SwiftShader): los controles, los seis presets y la barra de audio aparecen; el anillo queda oculto sin respiración; Esc y «Salir» cierran la vista; sin errores.
+- **Pendiente manual:** coincidencia de la respiración del fractal con las campanillas (<50 ms, grabando la pantalla).
