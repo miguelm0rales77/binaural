@@ -56,7 +56,7 @@ Lectura preliminar: la evidencia de conectividad y potencia es heterogénea. Hay
 
 ## B06 — Auditory steady-state response to binaural beats versus monaural beats versus isochronic tones
 Sin filtros. Respuesta cortical (ASSR) más débil con binaurales que con monaurales. Isocrónicos no se comparan directamente aquí.
-- Orozco Perez et al., 2019 (eNeuro). Ensayo controlado con control activo (monaural), cegamiento simple. Los binaurales arrastran la corteza en la frecuencia del pulso, pero menos que los monaurales. Acoplamiento cruzado solo con binaurales. Sin modulación de ánimo medida. Afirmaciones: A3 (apoya la idea de respuesta más débil de binaurales, no de isocrónicos), A2.
+- Orozco Perez et al., 2020 (eNeuro). Ensayo controlado con control activo (monaural), cegamiento simple. Los binaurales arrastran la corteza en la frecuencia del pulso, pero menos que los monaurales. Acoplamiento cruzado solo con binaurales. Sin modulación de ánimo medida. Afirmaciones: A3 (apoya la idea de respuesta más débil de binaurales, no de isocrónicos), A2.
 - Schwarz & Taylor, 2005 (Clin Neurophysiol). ASSR de binaurales de 40 Hz a 400 Hz, indetectable por encima de 3 kHz. Afirmaciones: A11 (portadoras bajas), A2.
 - Grose et al., 2012 (Ear Hear). La respuesta de binaurales de 40 Hz es menos frecuente en adultos mayores. Afirmaciones: A2, A8.
 - Ungan et al., 2019 (Exp Brain Res). Binaurales de ciclo único: respuestas N1-P2 hasta 7 veces mayores que los ASSR estacionarios. Diseño de laboratorio. Afirmaciones: A3, A2.
@@ -66,7 +66,7 @@ Sin filtros. Respuesta cortical (ASSR) más débil con binaurales que con monaur
 - Kumar et al., 2023 (bioRxiv, preimpresión). ASSR 40 Hz monaural y binaural: dominancia hemisférica derecha. No revisado por pares. Afirmaciones: A8 (contexto).
 - Watson et al., 2021 (Trends Hear). Simulación: ASSR puede suprimirse con diferencias interaurales grandes. Afirmaciones: A3 (riesgo de medición).
 
-Lectura preliminar: el argumento de A3 (isocrónicos con respuesta cortical más fuerte que binaurales) tiene apoyo de un ensayo con control activo (Orozco Perez 2019) y de una comparación de laboratorio (Ungan). No hay ningún dato clínico que lo relacione con beneficio. Coherente con "plausible a nivel fisiológico". Pendiente: verificar la comparación isocrónico frente a binaural con un estudio dedicado.
+Lectura preliminar: el argumento de A3 (isocrónicos con respuesta cortical más fuerte que binaurales) tiene apoyo de un ensayo con control activo (Orozco Perez 2020) y de una comparación de laboratorio (Ungan). No hay ningún dato clínico que lo relacione con beneficio. Coherente con "plausible a nivel fisiológico". Pendiente: verificar la comparación isocrónico frente a binaural con un estudio dedicado.
 
 ## B07 — Do binaural beats improve sleep quality or increase slow-wave sleep?
 Sin filtros. Muestras pequeñas y resultados mixtos. Ningún metaanálisis.
@@ -290,5 +290,11 @@ Búsquedas lanzadas: B01–B20 (20 de 20). Con límite de frecuencia: B01 y B03 
 Verificadas (PMID y DOI confirmados por metadatos): Garcia-Argibay 2018; Ingendoh 2023; Xiong 2025; Shukla 2025; Isik 2017; Menziletoğlu 2021; Zaki 2025; Fatima 2026; Shamsi 2024; Sforza 2026; Gkolias 2020; Orozco Perez 2020; Klichowski 2023; Vickrey 2023; Dos Anjos 2024; Harrington 2021; Ngo 2013; Schneider 2020; Basner 2026; Chan 2022; Hsiung 2024; Wu 2025; Ang 2025; Soula 2023. Total: 24 de 32 filas del CSV (incluye exclusiones).
 No encontradas en PubMed (no citar hasta buscarlas en otra base): Perrott & Nelson 1969; Pang 2024; Calamassi 2019 y 2022 (las búsquedas por apellido y por título no dieron resultados).
 Excluidas por fuente comercial o no primaria: Boasso 2023, Oberle 2022, Funk 2022 (comerciales); Oster 1973 (divulgación).
+Verificación con fuentes externas (DOI aportados por el usuario; no aparecen en PubMed, así que no cuentan como verificadas en PubMed):
+- Baseanu 2024, Appl Sci, DOI 10.3390/app14135675: el DOI no se resuelve en PubMed (la revista no está indexada allí). Pendiente de comprobar en otra base.
+- Thanyawinichkul K et al. 2022, J Med Assoc Thai, DOI 10.35755/jmedassocthai.2022.09.13598: el nombre del primer autor sustituye a "Thai LBP RCT". Sin resultado en PubMed por título ni por cita.
+- Tanasic BR 2022, J Psychol Neurosci, DOI 10.47485/2693-2490.1060: no es un estudio de binaurales, sino de 432 frente a 440 Hz. No está en PubMed.
+- Lee J et al. 2018, bioRxiv, DOI 10.1101/390302: sigue siendo preimpresión.
+- On FR et al. 2013, IEEE (comunicación a congreso: 9th International Colloquium on Signal Processing and its Applications): no está en PubMed.
 Correcciones a este archivo: Schneider es de 2020 (no 2019). Harrington 2021 (n = 12, sin beneficio en memoria con CLAS) se añade a B14 como estudio primario. El PMID que yo había asociado a "Ngo 2013" era de otro artículo; el correcto es 23583623. Soula 2023 sí está en PubMed (PMID 36879142): la marca "no encontrado" anterior era un error mío. Menziletoğlu es de 2021 según PubMed, no de 2020.
 Las referencias del resto del bloque (incluidas las citadas en las lecturas preliminares) siguen sin verificar y no se deben citar hasta comprobarlas en PubMed o en el CSV.
