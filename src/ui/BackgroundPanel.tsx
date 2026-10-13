@@ -1,4 +1,5 @@
 import type { BackgroundState } from '../audio/BackgroundPlayer'
+import { AlertIcon } from './icons'
 
 interface Props {
   state: BackgroundState
@@ -63,7 +64,8 @@ export function BackgroundPanel({ state, progress, hasProgram, stale, disabled, 
       )}
       {error && (
         <p className="error" role="alert">
-          No se pudo iniciar: {error}
+          <AlertIcon />
+          <span>No se pudo iniciar: {error}</span>
         </p>
       )}
     </details>

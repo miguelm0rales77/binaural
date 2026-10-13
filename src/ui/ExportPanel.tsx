@@ -3,6 +3,7 @@ import { LARGE_EXPORT_BYTES, MAX_EXPORT_MINUTES, estimateBytes, exportFileName, 
 import { LOOP_SECONDS } from '../audio/render'
 import { downloadBlob, exportWav, type ExportHandle } from '../audio/wavExport'
 import type { EngineParams, Program } from '../dsp/types'
+import { AlertIcon } from './icons'
 
 interface Props {
   params: EngineParams
@@ -135,7 +136,8 @@ export function ExportPanel({ params, program, timerMin, disabled }: Props) {
       )}
       {state.kind === 'error' && (
         <p className="error" role="alert">
-          No se pudo exportar: {state.message}
+          <AlertIcon />
+          <span>No se pudo exportar: {state.message}</span>
         </p>
       )}
     </details>

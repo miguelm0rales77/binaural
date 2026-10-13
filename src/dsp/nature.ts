@@ -209,11 +209,13 @@ export class RiverGen implements NatureGen {
   }
 }
 
-const ROLLS = 4
-/** Ganancias de las tres capas del trueno (calibradas con las medidas de los tests). */
-const THUNDER_LOW = 15
-const THUNDER_MID = 4.6
-const THUNDER_CRACK = 1.4
+const ROLLS = 8
+/** Ganancias de las capas del trueno (calibradas con las medidas de los tests). */
+const THUNDER_LOW = 8
+const THUNDER_BODY = 3.4
+const THUNDER_MID = 1.7
+const THUNDER_CRACK = 0.8
+const THUNDER_SHEET = 0.6
 
 export interface ThunderOptions {
   /** Segundos hasta el primer trueno (por defecto 5–12 s al azar). */
@@ -223,9 +225,12 @@ export interface ThunderOptions {
 }
 
 /**
- * Trueno en tres capas, para que se oiga con cualquier altavoz y con auriculares:
- *  - retumbo grave (< ~150 Hz) para auriculares, con varias «oleadas» irregulares;
- *  - retumbo medio (200–1000 Hz) que se reproduce en altavoces pequeños de portátil o móvil;
+ * Trueno largo con «retumbe», como el de una hoja de latón que se ondea (thunder sheet): dura ~14–22 s,
+ * con varias oleadas que crecen y bajan y un temblor rápido e irregular de amplitud. Capas:
+ *  - subgrave (< ~150 Hz) para auriculares, con las oleadas;
+ *  - cuerpo del retumbo (70–300 Hz) con temblor de ~6 Hz, lo que le da el «ondeo»;
+ *  - retumbo medio (200–1000 Hz) para altavoces pequeños, también con temblor;
+ *  - «hoja»: dos bandas metálicas (~700 y ~1700 Hz) con un aleteo rápido (~14 Hz) que se apaga antes;
  *  - chasquido de banda ancha al principio (más fuerte cuanto más cercano), con un eco.
  * El ataque es de 50 ms (cercano) a 650 ms (lejano): un trueno real no entra en silencio. Quien sea sensible
  * a los ruidos fuertes no debería usar la tormenta (la interfaz lo avisa).
@@ -233,9 +238,15 @@ export interface ThunderOptions {
 export class Thunder {
   private readonly lp1: LP
   private readonly lp2: LP
+  private readonly bodyHp: HP
+  private readonly bodyLp: LP
   private readonly midHp: HP
   private readonly midLp: LP
   private readonly crackBp: BandPass
+  private readonly sheetLo: BandPass
+  private readonly sheetHi: BandPass
+  private readonly wobble: SlowRandom // temblor lento-medio (~6 Hz)
+  private readonly flutter: SlowRandom // aleteo rápido (~14 Hz)
   private readonly rollT = new Float64Array(ROLLS)
   private readonly rollA = new Float64Array(ROLLS)
   private readonly rollW = new Float64Array(ROLLS)
@@ -243,6 +254,7 @@ export class Thunder {
   private attack = 0 // s
   private tauLow = 1 // s
   private tauMid = 0.5 // s
+  private tauSheet = 0.5 // s
   private amp = 0
   private midGain = 1
   private crackAmp = 0
@@ -256,7 +268,7 @@ export class Thunder {
   private readonly meanWaitSec: number
   private readonly forcedDistance: number | undefined
 
-  /** `meanWaitSec`: media de la espera (exponencial, entre 4 y 30 s) entre el final de un trueno y el siguiente. */
+  /** `meanWaitSec`: media de la espera (exponencial, entre 6 y 50 s) entre el final de un trueno y el siguiente. */
   constructor(rand: Rand, fs: number, meanWaitSec: number, opts: ThunderOptions = {}) {
     this.rand = rand
     this.fs = fs
@@ -265,9 +277,15 @@ export class Thunder {
     this.forcedDistance = opts.distance
     this.lp1 = new LP(85, fs)
     this.lp2 = new LP(140, fs)
+    this.bodyHp = new HP(70, fs)
+    this.bodyLp = new LP(300, fs)
     this.midHp = new HP(200, fs)
     this.midLp = new LP(1000, fs)
     this.crackBp = new BandPass(fs)
+    this.sheetLo = new BandPass(fs)
+    this.sheetHi = new BandPass(fs)
+    this.wobble = new SlowRandom(rand, 6, fs)
+    this.flutter = new SlowRandom(rand, 14, fs)
     this.wait = (opts.firstWaitSec ?? 5 + 7 * rand()) * fs
   }
 
@@ -276,17 +294,22 @@ export class Thunder {
     this.active = true
     this.t = 0
     this.attack = 0.05 + 0.6 * dist
-    this.tauLow = 0.9 + 0.6 * this.rand()
-    this.tauMid = 0.55 * this.tauLow
+    this.tauLow = 4.5 + 1.5 * this.rand() // caída lenta: el retumbo se oye 10–15 s y se extingue hacia los 20 s
+    this.tauMid = 0.7 * this.tauLow
+    this.tauSheet = 0.4 * this.tauLow
     this.amp = 0.65 + 0.35 * this.rand()
     this.midGain = 1 - 0.5 * dist
     this.crackAmp = dist < 0.75 ? 0.9 * Math.pow(1 - dist / 0.75, 1.5) : 0
     this.crack2At = 0.12 + 0.35 * this.rand()
     this.crack2Amp = 0.45 * this.crackAmp
+    // oleadas irregulares repartidas por todo el retumbo (más separadas y más anchas al avanzar). Su fuerza crece
+    // con el tiempo para compensar la caída de la envolvente: así las oleadas tardías se oyen y el retumbo «rueda».
+    let at = this.attack + 0.5
     for (let j = 0; j < ROLLS; j++) {
-      this.rollT[j] = this.attack + 0.6 + (j + 0.6 * this.rand()) * 0.9 // «oleadas» irregulares
-      this.rollA[j] = 0.5 + 0.7 * this.rand()
-      this.rollW[j] = 0.25 + 0.35 * this.rand()
+      at += 0.7 + 1.8 * this.rand() + 0.12 * j
+      this.rollT[j] = at
+      this.rollA[j] = (0.6 + 0.9 * this.rand()) * Math.exp((0.55 * (at - this.attack)) / this.tauLow)
+      this.rollW[j] = 0.35 + 0.5 * this.rand() + 0.05 * j
     }
   }
 
@@ -299,17 +322,21 @@ export class Thunder {
     const atk = this.attack
     // cuerpo del retumbo: subida en coseno alzado y decaimiento exponencial, modulado por las oleadas
     const baseLow = ts < atk ? 0.5 - 0.5 * Math.cos((Math.PI * ts) / atk) : Math.exp(-(ts - atk) / this.tauLow)
-    if (ts > atk && baseLow < 1e-3) {
+    if (ts > atk && baseLow < 3e-2) {
       this.active = false
-      this.wait = Math.min(30, Math.max(4, -Math.log(1 - this.rand()) * this.meanWaitSec)) * this.fs
+      this.wait = Math.min(50, Math.max(6, -Math.log(1 - this.rand()) * this.meanWaitSec)) * this.fs
       return 0
     }
     const baseMid = ts < atk ? baseLow : Math.exp(-(ts - atk) / this.tauMid)
+    const baseSheet = ts < atk ? baseLow : Math.exp(-(ts - atk) / this.tauSheet)
     let rolls = 1
     for (let j = 0; j < ROLLS; j++) {
       const d = (ts - (this.rollT[j] as number)) / (this.rollW[j] as number)
       rolls += (this.rollA[j] as number) * Math.exp(-0.5 * d * d)
     }
+    // temblor de amplitud (el «ondeo» de la hoja): lento-medio en el cuerpo y el retumbo medio, rápido en la hoja
+    const wob = 1 + 0.55 * this.wobble.tick()
+    const flu = 1 + 0.5 * this.flutter.tick()
     // chasquido (y su eco): ataque de 12–20 ms, decaimiento rápido
     let crack = 0
     if (this.crackAmp > 0 && ts < this.crack2At + 1.5) {
@@ -319,9 +346,18 @@ export class Thunder {
     }
     const n = noise(this.rand)
     const low = this.lp2.tick(this.lp1.tick(n))
+    const body = this.bodyLp.tick(this.bodyHp.tick(n))
     const mid = this.midLp.tick(this.midHp.tick(n))
     const cr = this.crackBp.tick(n, 1400, 0.6)
-    return this.amp * (THUNDER_LOW * low * baseLow * rolls + THUNDER_MID * this.midGain * mid * baseMid * rolls + THUNDER_CRACK * cr * crack)
+    const sheet = this.sheetLo.tick(n, 700, 1.2) + 0.7 * this.sheetHi.tick(n, 1700, 1.5)
+    return (
+      this.amp *
+      (THUNDER_LOW * low * baseLow * rolls +
+        THUNDER_BODY * body * baseMid * rolls * wob +
+        THUNDER_MID * this.midGain * mid * baseMid * rolls * wob +
+        THUNDER_SHEET * sheet * baseSheet * rolls * flu * wob +
+        THUNDER_CRACK * cr * crack)
+    )
   }
 }
 
@@ -334,7 +370,7 @@ export class StormGen implements NatureGen {
   constructor(rand: Rand, fs: number, level = 0.8) {
     this.rain = new RainGen(rand, fs, 1, 1)
     this.wind = new WindGen(rand, fs, 0.5, 300)
-    this.thunder = new Thunder(rand, fs, 12)
+    this.thunder = new Thunder(rand, fs, 24)
     this.level = level
   }
   next(): number {

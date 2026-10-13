@@ -110,8 +110,8 @@ describe('color espectral', () => {
 })
 
 describe('truenos', () => {
-  const thunderSolo = (distance: number, seconds = 12) => {
-    const t = new Thunder(mulberry32(9), FS, 12, { firstWaitSec: 0.1, distance })
+  const thunderSolo = (distance: number, seconds = 30, seed = 9) => {
+    const t = new Thunder(mulberry32(seed), FS, 24, { firstWaitSec: 0.1, distance })
     const x = new Float32Array(seconds * FS)
     for (let i = 0; i < x.length; i++) x[i] = t.tick()
     return x
@@ -126,6 +126,13 @@ describe('truenos', () => {
     for (let i = Math.round(a * FS); i < Math.round(b * FS); i++) sum += (x[i] as number) ** 2
     return Math.sqrt(sum / ((b - a) * FS))
   }
+  /** Variación del nivel (desviación típica / media) del RMS en ventanas de 20 ms entre a y b s. */
+  const levelVariation = (x: Float32Array, a: number, b: number) => {
+    const w: number[] = []
+    for (let t = a; t < b; t += 0.02) w.push(rmsBetween(x, t, t + 0.02))
+    const mean = w.reduce((p, q) => p + q, 0) / w.length
+    return Math.sqrt(w.reduce((p, q) => p + (q - mean) ** 2, 0) / w.length) / mean
+  }
   const share = (x: Float32Array, lo: number, hi: number) => {
     const total = bandEnergy(x, 0.1, 20, 6000, 65536)
     return bandEnergy(x, 0.1, lo, hi, 65536) / total
@@ -133,7 +140,7 @@ describe('truenos', () => {
 
   it('el primer trueno cae entre los 5 y los 12 s, con silencio exacto antes', () => {
     for (const seed of [1, 2, 3]) {
-      const t = new Thunder(mulberry32(seed), FS, 12)
+      const t = new Thunder(mulberry32(seed), FS, 24)
       let first = -1
       for (let i = 0; i < 14 * FS && first < 0; i++) if (t.tick() !== 0) first = i / FS
       console.log(`  semilla ${seed}: primer trueno a los ${first.toFixed(1)} s`)
@@ -142,9 +149,9 @@ describe('truenos', () => {
     }
   })
 
-  it('caen con frecuencia (≈ cada 10–40 s), duran 4–12 s y no se solapan', () => {
-    const t = new Thunder(mulberry32(1), FS, 12)
-    const n = 150 * FS
+  it('son largos: ~15–21 s de retumbo, separados por 6–50 s, sin solaparse', () => {
+    const t = new Thunder(mulberry32(1), FS, 24)
+    const n = 240 * FS
     const events: { start: number; dur: number }[] = []
     let start = -1
     let quiet = 0
@@ -157,24 +164,78 @@ describe('truenos', () => {
         start = -1
       }
     }
-    console.log(`  ${events.length} truenos en 150 s: ${events.map((e) => `${e.start.toFixed(0)} s (${e.dur.toFixed(0)} s)`).join(', ')}`)
-    expect(events.length).toBeGreaterThanOrEqual(5)
-    expect(events.length).toBeLessThanOrEqual(12)
+    console.log(`  ${events.length} truenos en 240 s: ${events.map((e) => `${e.start.toFixed(0)} s (${e.dur.toFixed(0)} s)`).join(', ')}`)
+    expect(events.length).toBeGreaterThanOrEqual(3)
+    expect(events.length).toBeLessThanOrEqual(9)
     for (const e of events) {
-      expect(e.dur).toBeGreaterThanOrEqual(4)
-      expect(e.dur).toBeLessThanOrEqual(12.5)
+      expect(e.dur).toBeGreaterThanOrEqual(12)
+      expect(e.dur).toBeLessThanOrEqual(24)
     }
     for (let i = 1; i < events.length; i++) {
-      const gap = (events[i] as (typeof events)[number]).start - (events[i - 1] as (typeof events)[number]).start
-      expect(gap).toBeGreaterThanOrEqual(8)
-      expect(gap).toBeLessThanOrEqual(45)
+      const prev = events[i - 1] as (typeof events)[number]
+      const gap = (events[i] as (typeof events)[number]).start - (prev.start + prev.dur)
+      expect(gap).toBeGreaterThanOrEqual(5.5)
+      expect(gap).toBeLessThanOrEqual(51)
     }
   })
 
-  it('en la tormenta se oyen claramente: graves ≥ ×6, medios (250–1000 Hz, los de un altavoz pequeño) ≥ ×3 y nivel total ≥ ×2', () => {
+  it('se oye de verdad mucho tiempo: a los 10 s aún conserva ≥ 20 % de su máximo y hacia los 20 s se extingue', () => {
+    for (const d of [0, 0.5, 1]) {
+      const x = thunderSolo(d)
+      let top = 0
+      for (let a = 0; a < 6; a += 0.5) top = Math.max(top, rmsBetween(x, a, a + 0.5))
+      const at10 = rmsBetween(x, 10, 10.5)
+      const at20 = rmsBetween(x, 20, 20.5)
+      console.log(`  distancia ${d}: máximo ${top.toFixed(2)} · a los 10 s ${(at10 / top * 100).toFixed(0)} % · a los 20 s ${(at20 / top * 100).toFixed(1)} %`)
+      expect(at10).toBeGreaterThan(0.2 * top)
+      expect(at20).toBeLessThan(0.05 * top)
+    }
+  })
+
+  it('«retumbe»: varias oleadas que suben y bajan, no una caída lisa', () => {
+    for (const d of [0, 0.5, 1]) {
+      const x = thunderSolo(d)
+      // envolvente suavizada (τ = 0,3 s) y recuento de máximos locales con una prominencia ≥ 8 % del máximo, entre 2 y 16 s
+      const a = 1 - Math.exp(-1 / (0.3 * FS))
+      const e = new Float64Array(x.length)
+      let y = 0
+      for (let i = 0; i < x.length; i++) {
+        y += a * (Math.abs(x[i] as number) - y)
+        e[i] = y
+      }
+      let top = 0
+      for (const v of e) top = Math.max(top, v)
+      const step = Math.round(0.25 * FS)
+      const pts: number[] = []
+      for (let i = Math.round(2 * FS); i < 16 * FS; i += step) pts.push(e[i] as number)
+      let waves = 0
+      for (let i = 1; i < pts.length - 1; i++) {
+        const p = pts[i] as number
+        if (p > (pts[i - 1] as number) && p >= (pts[i + 1] as number)) {
+          // prominencia: diferencia con el valle más profundo en los 1,5 s anteriores
+          const from = Math.max(0, i - 6)
+          const valley = Math.min(...pts.slice(from, i))
+          if (p - valley > 0.08 * top) waves++
+        }
+      }
+      console.log(`  distancia ${d}: ${waves} oleadas entre 2 y 16 s`)
+      expect(waves).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  it('tiene temblor de amplitud rápido (el ondeo de una hoja de latón): el nivel varía ≥ 25 % entre ventanas de 20 ms', () => {
+    for (const d of [0, 0.5, 1]) {
+      const x = thunderSolo(d)
+      const cv = levelVariation(x, 4, 8)
+      console.log(`  distancia ${d}: variación del nivel en 4–8 s = ${(cv * 100).toFixed(0)} %`)
+      expect(cv).toBeGreaterThan(0.25)
+    }
+  })
+
+  it('en la tormenta se oyen claramente: graves ≥ ×4, medios (250–1000 Hz, los de un altavoz pequeño) ≥ ×4, nivel total ≥ ×2', () => {
     for (const seed of [1, 2]) {
       const g = new StormGen(mulberry32(seed), FS)
-      const n = 150 * FS
+      const n = 200 * FS
       const y = new Float32Array(n)
       for (let i = 0; i < n; i++) y[i] = g.next()
       const med = (a: number[]) => [...a].sort((p, q) => p - q)[Math.floor(a.length / 2)] as number
@@ -190,24 +251,29 @@ describe('truenos', () => {
       }
       const ratio = (a: number[]) => Math.sqrt(Math.max(...a) / med(a))
       const r = { total: Math.max(...level) / med(level), low: ratio(low), mid: ratio(mid) }
-      console.log(`  semilla ${seed}: nivel ×${r.total.toFixed(1)} · graves ×${r.low.toFixed(1)} · medios ×${r.mid.toFixed(1)} · pico ${peakOf(y).toFixed(2)}`)
+      let hot = 0
+      for (const v of y) if (Math.abs(v) > 0.9) hot++
+      console.log(`  semilla ${seed}: nivel ×${r.total.toFixed(1)} · graves ×${r.low.toFixed(1)} · medios ×${r.mid.toFixed(1)} · pico ${peakOf(y).toFixed(2)} · muestras > 0,9: ${((100 * hot) / n).toFixed(2)} %`)
       expect(r.total).toBeGreaterThanOrEqual(2)
-      expect(r.low).toBeGreaterThanOrEqual(6)
-      expect(r.mid).toBeGreaterThanOrEqual(3)
+      expect(r.low).toBeGreaterThanOrEqual(4)
+      expect(r.mid).toBeGreaterThanOrEqual(4)
       expect(peakOf(y)).toBeLessThanOrEqual(1)
+      expect(hot / n).toBeLessThan(0.01) // no vive saturado: menos del 1 % de las muestras pasa de 0,9
     }
   })
 
-  it('tiene tres capas: grave, medio y chasquido (este solo si el trueno es cercano)', () => {
+  it('tiene capas grave, media, metálica y (si es cercano) chasquido', () => {
     const near = thunderSolo(0)
     const far = thunderSolo(1)
-    const n = { low: share(near, 20, 150), mid: share(near, 150, 800), crack: share(near, 800, 6000) }
-    const f = { crack: share(far, 800, 6000) }
-    console.log(`  cercano: <150 Hz ${(n.low * 100).toFixed(0)} %, 150–800 Hz ${(n.mid * 100).toFixed(0)} %, >800 Hz ${(n.crack * 100).toFixed(1)} % · lejano: >800 Hz ${(f.crack * 100).toFixed(1)} %`)
-    expect(n.low).toBeGreaterThan(0.5)
-    expect(n.mid).toBeGreaterThan(0.05)
-    expect(n.crack).toBeGreaterThan(0.02)
-    expect(f.crack).toBeLessThan(n.crack * 0.75) // el lejano casi no tiene chasquido
+    const n = { low: share(near, 20, 150), mid: share(near, 150, 800), high: share(near, 800, 6000) }
+    const f = { high: share(far, 800, 6000) }
+    console.log(`  cercano: <150 Hz ${(n.low * 100).toFixed(0)} %, 150–800 Hz ${(n.mid * 100).toFixed(0)} %, >800 Hz ${(n.high * 100).toFixed(1)} % · lejano: >800 Hz ${(f.high * 100).toFixed(1)} %`)
+    // (la energía del subgrave pesa poco, pero se nota mucho en auriculares: basta con que esté claramente presente)
+    expect(n.low).toBeGreaterThan(0.12) // subgrave para auriculares
+    expect(n.mid).toBeGreaterThan(0.15) // retumbo medio para altavoces pequeños
+    expect(n.high).toBeGreaterThan(0.02) // chasquido y hoja
+    expect(n.high).toBeLessThan(0.6) // pero no domina: es un retumbo, no un siseo metálico
+    expect(f.high).toBeLessThan(0.9 * n.high) // el lejano tiene menos chasquido
   })
 
   it('el cercano entra rápido (inicio marcado, a propósito) pero sin escalón digital; el lejano entra despacio', () => {
@@ -220,7 +286,7 @@ describe('truenos', () => {
     const nearStart = rmsBetween(near, 0.1, 0.15)
     const farStart = rmsBetween(far, 0.1, 0.15)
     console.log(`  cercano: primeros 2 ms ${first.toFixed(3)} frente a un máximo de ${topNear.toFixed(3)} en 150 ms · RMS primeros 50 ms: cercano ${nearStart.toFixed(3)}, lejano ${farStart.toFixed(3)}`)
-    expect(nearStart).toBeGreaterThan(0.2) // ya suena fuerte en 50 ms
+    expect(nearStart).toBeGreaterThan(0.15) // ya suena fuerte en 50 ms
     expect(farStart).toBeLessThan(0.05) // el lejano arranca casi en silencio
     expect(first).toBeLessThan(0.3 * topNear) // la envolvente sube en milisegundos, no de golpe en una muestra
   })

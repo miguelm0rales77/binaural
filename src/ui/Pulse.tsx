@@ -12,7 +12,6 @@ interface Props {
 
 const HEIGHT = 96
 const PAD = 12
-const ACCENT = '#6aa9ff'
 
 /** Patrón del pulso (sin parpadeos, ver `viz.ts`). Usa requestAnimationFrame y no toca el audio. */
 export function Pulse({ mode, beatHz, depth, active }: Props) {
@@ -28,8 +27,22 @@ export function Pulse({ mode, beatHz, depth, active }: Props) {
     const ctx = el?.getContext('2d')
     if (!el || !ctx) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const scheme = window.matchMedia('(prefers-color-scheme: dark)')
     let raf = 0
     let last = ''
+    // Colores del tema (claro/oscuro) leídos de las variables CSS; se releen si el sistema cambia de tema.
+    let colors = { line: '#1d342e', fill: 'rgba(29,52,46,0.1)', dot: '#a18039' }
+    const readColors = () => {
+      const css = getComputedStyle(el)
+      colors = {
+        line: css.getPropertyValue('--viz-line').trim() || colors.line,
+        fill: css.getPropertyValue('--viz-fill').trim() || colors.fill,
+        dot: css.getPropertyValue('--viz-dot').trim() || colors.dot,
+      }
+      last = ''
+    }
+    readColors()
+    scheme.addEventListener('change', readColors)
 
     const draw = (now: number) => {
       const { mode, beatHz, depth, active } = latest.current
@@ -55,7 +68,7 @@ export function Pulse({ mode, beatHz, depth, active }: Props) {
         for (let x = 0; x <= w; x += 1) ctx.lineTo(x, y(envelopeAt(mode, beatHz, depth, x / w)))
         ctx.lineTo(w, y(0))
         ctx.closePath()
-        ctx.fillStyle = 'rgba(106, 169, 255, 0.16)'
+        ctx.fillStyle = colors.fill
         ctx.fill()
         ctx.beginPath()
         for (let x = 0; x <= w; x += 1) {
@@ -63,21 +76,24 @@ export function Pulse({ mode, beatHz, depth, active }: Props) {
           if (x === 0) ctx.moveTo(x, py)
           else ctx.lineTo(x, py)
         }
-        ctx.strokeStyle = ACCENT
+        ctx.strokeStyle = colors.line
         ctx.lineWidth = 1.5
         ctx.stroke()
         // punto de brillo constante
         if (pos >= 0) {
           ctx.beginPath()
           ctx.arc(pos * w, y(envelopeAt(mode, beatHz, depth, pos)), 5, 0, Math.PI * 2)
-          ctx.fillStyle = '#fff'
+          ctx.fillStyle = colors.dot
           ctx.fill()
         }
       }
       raf = requestAnimationFrame(draw)
     }
     raf = requestAnimationFrame(draw)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      scheme.removeEventListener('change', readColors)
+    }
   }, [])
 
   return (

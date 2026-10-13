@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Preset } from '../dsp/types'
 import { describePreset } from '../presets'
 import { MAX_NAME_LENGTH } from '../storage'
+import { CloseIcon } from './icons'
 
 interface Props {
   builtIn: readonly Preset[]
@@ -27,6 +28,7 @@ export function PresetPicker({ builtIn, user, activeId, onLoad, onSave, onDelete
 
   return (
     <section className="presets" aria-labelledby="presets-title">
+      <p className="eyebrow">Punto de partida</p>
       <h2 id="presets-title">Presets</h2>
       <div className="preset-list">
         {builtIn.map((p) => (
@@ -47,7 +49,7 @@ export function PresetPicker({ builtIn, user, activeId, onLoad, onSave, onDelete
                   aria-label={`Borrar el preset ${p.name}`}
                   onClick={() => onDelete(p.id)}
                 >
-                  ✕
+                  <CloseIcon />
                 </button>
               </div>
             ))}

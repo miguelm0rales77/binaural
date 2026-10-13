@@ -24,6 +24,7 @@ import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
 import { ModeSelector } from './ui/ModeSelector'
+import { AlertIcon } from './ui/icons'
 import { PresetPicker } from './ui/PresetPicker'
 import { Slider } from './ui/Slider'
 import { isoFastWarning, warningsFor } from './warnings'
@@ -212,9 +213,13 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   return (
     <main className="app">
       <header className="top">
-        <h1>Binaural</h1>
+        <div>
+          <p className="eyebrow">Sonido · Pulso · Fondo</p>
+          <h1>Binaural</h1>
+        </div>
         <a href="#acerca">Acerca de</a>
       </header>
+      <div className="rule" aria-hidden="true" />
 
       <div className="player" role="region" aria-label="Reproducción">
         <button className="play" onClick={toggle} disabled={busy} aria-live="polite">
@@ -232,7 +237,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       </div>
       {error && (
         <p className="error" role="alert">
-          No se pudo iniciar el audio: {error}
+          <AlertIcon />
+          <span>No se pudo iniciar el audio: {error}</span>
         </p>
       )}
       <p className="hint">Usa auriculares en modo binaural y mantén el volumen bajo.</p>
@@ -271,6 +277,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       />
 
       <section className="controls" aria-labelledby="controls-title">
+        <p className="eyebrow">Sonido · Pulso · Volumen</p>
         <h2 id="controls-title">Ajustes</h2>
         <ModeSelector mode={params.mode} onChange={(mode) => update({ mode })} />
 
@@ -303,7 +310,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         </p>
         {isoFastWarning(params) && !isoSeen && (
           <div className="warning" role="alert">
-            <p>⚠ {ISO_FAST_WARNING.text}</p>
+            <AlertIcon />
+            <p>{ISO_FAST_WARNING.text}</p>
             <button type="button" onClick={onDismissIso}>
               {ISO_FAST_WARNING.button}
             </button>
@@ -311,7 +319,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
         )}
         {warnings.map((w) => (
           <p key={w} className="warning" role="status">
-            ⚠ {w}
+            <AlertIcon />
+            <span>{w}</span>
           </p>
         ))}
 
