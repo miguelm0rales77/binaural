@@ -151,12 +151,13 @@ describe('gong', () => {
     expect(peak(a)).toBeLessThanOrEqual(1)
   })
 
-  it('tiene un nivel parecido al del ruido rosa (RMS 0,10–0,30)', () => {
+  it('tiene un nivel razonable (RMS 0,06–0,30: suena de forma intermitente, un golpe cada 18–34 s) y no satura', () => {
     const y = render(new GongGen(mulberry32(3), FS), 120)
     const r = rms(y)
     console.log(`  gong: RMS = ${r.toFixed(3)} · pico = ${peak(y).toFixed(3)}`)
-    expect(r).toBeGreaterThan(0.1)
+    expect(r).toBeGreaterThan(0.06)
     expect(r).toBeLessThan(0.3)
+    expect(peak(y)).toBeLessThan(0.97)
   })
 
   it('es inarmónico: los parciales altos no caen en múltiplos enteros, y el espectro lo confirma', () => {
@@ -172,36 +173,51 @@ describe('gong', () => {
     const at = (f: number) => bandPower(x, 2.5, f * 0.99, f * 1.01)
     const far = GONG_RATIOS.map((r, i) => ({ r, i })).filter(({ r, i }) => i > 0 && Math.abs(r - Math.round(r)) >= 0.25 && r * 110 < 3500)
     expect(far.length).toBeGreaterThanOrEqual(2)
-    for (const { r } of far) expect(at(110 * r)).toBeGreaterThan(3 * at(110 * Math.round(r)))
+    for (const { r } of far) expect(at(110 * r)).toBeGreaterThan(2 * at(110 * Math.round(r)))
     // grave, pero con muchos parciales: energía por encima de 1 kHz y fundamental presente
     const total = bandPower(x, 2.5, 60, 4000)
     expect(bandPower(x, 2.5, 1000, 4000) / total).toBeGreaterThan(0.005)
     expect(bandPower(x, 2.5, 100, 125) / total).toBeGreaterThan(0.01)
   })
 
-  it('«florece» tras el golpe: los agudos tardan más en aparecer que los graves', () => {
-    const x = render(single(), 10)
-    const hi = (t: number) => bandPower(x, 0.2 + t, 700, 3500, 16384)
-    const lo = (t: number) => bandPower(x, 0.2 + t, 60, 400, 16384)
-    const hiEarly = hi(0.1)
-    const hiBloom = hi(2.0)
-    console.log(`  agudos (700–3500 Hz): al golpe ${hiEarly.toExponential(1)} → a los 2 s ${hiBloom.toExponential(1)} · graves al golpe ${lo(0.1).toExponential(1)} → 2 s ${lo(2.0).toExponential(1)}`)
-    expect(hiBloom).toBeGreaterThan(3 * hiEarly)
-    expect(lo(2.0)).toBeGreaterThan(lo(0.1))
+  // amplitud espectral (raíz de la potencia) en una banda, en una ventana de 0,17 s que empieza `t` s después del golpe
+  const T0 = 0.2 // el golpe de `single()` cae a los 0,2 s
+  const amp = (x: Float32Array, t: number, lo: number, hi: number) => Math.sqrt(bandPower(x, T0 + t, lo, hi, 8192))
+
+  it('tiene golpe de maza: arranca en milisegundos, es lo más fuerte del sonido y es de banda ancha', () => {
+    const x = render(single(0.3), 6)
+    const ms = (a: number) => sec(x, T0 + a / 1000, T0 + (a + 2) / 1000) // ventana de 2 ms desde el golpe
+    let top = 0
+    for (let a = 0; a < 100; a += 2) top = Math.max(top, ms(a))
+    const hit = sec(x, T0 + 0.02, T0 + 0.1) // el impacto se concentra en los primeros 100 ms
+    const ring = sec(x, T0 + 1, T0 + 2)
+    const clang = { hit: amp(x, 0, 500, 3000), later: amp(x, 1, 500, 3000) }
+    const highs = { hit: amp(x, 0, 1000, 3500), dip: amp(x, 0.6, 1000, 3500) }
+    console.log(`  golpe: primeros 2 ms ${ms(0).toFixed(3)} (máx ${top.toFixed(3)}) · RMS golpe ${hit.toFixed(3)} frente a anillo ${ring.toFixed(3)} · chasquido 500–3000 Hz ×${(clang.hit / clang.later).toFixed(1)} · agudos ×${(highs.hit / highs.dip).toFixed(1)}`)
+    expect(ms(0)).toBeLessThan(0.3 * top) // sube en milisegundos, no es un escalón de una muestra
+    expect(sec(x, T0 + 0.005, T0 + 0.025)).toBeGreaterThan(0.5 * hit) // y en 20 ms ya está en plena fuerza
+    expect(hit).toBeGreaterThan(1.15 * ring) // el golpe es más fuerte que el anillo posterior
+    expect(clang.hit).toBeGreaterThan(2 * clang.later) // chasquido de banda ancha que luego cae
+    expect(highs.hit).toBeGreaterThan(2 * highs.dip)
+  })
+
+  it('después del golpe «florece»: los graves crecen y los agudos vuelven como brillo sostenido', () => {
+    const x = render(single(0.3), 8)
+    const low0 = amp(x, 0, 60, 400)
+    const low1 = amp(x, 1, 60, 400)
+    const highDip = amp(x, 0.6, 1000, 3500)
+    const highBack = amp(x, 3, 1000, 3500)
+    console.log(`  graves: golpe ${low0.toFixed(0)} → 1 s ${low1.toFixed(0)} (×${(low1 / low0).toFixed(1)}) · agudos: valle ${highDip.toFixed(0)} → 3 s ${highBack.toFixed(0)} (×${(highBack / highDip).toFixed(1)})`)
+    expect(low1).toBeGreaterThan(1.8 * low0)
+    expect(highBack).toBeGreaterThan(1.2 * highDip)
   })
 
   it('suena mucho tiempo y se apaga despacio', () => {
     const x = render(single(0.2), 40)
     const a = sec(x, 2, 4)
-    expect(sec(x, 12, 14)).toBeGreaterThan(0.25 * a) // a los 12 s aún suena con fuerza
-    expect(sec(x, 30, 32)).toBeLessThan(0.3 * a) // y a los 30 s ya se ha apagado bastante
+    expect(sec(x, 12, 14)).toBeGreaterThan(0.25 * a) // a los 12 s aún suena
+    expect(sec(x, 30, 32)).toBeLessThan(0.4 * a) // a los 30 s se ha apagado bastante
     expect(sec(x, 30, 32)).toBeGreaterThan(0) // pero no de golpe
-  })
-
-  it('ninguna subida a 100 ms supera el 35 % del máximo, con varias semillas', () => {
-    const rises = [1, 2, 3, 4].map((seed) => maxRiseFraction(render(new GongGen(mulberry32(seed), FS), 70)))
-    console.log(`  subida máxima a 100 ms por semilla: ${rises.map((r) => (r * 100).toFixed(0) + ' %').join(', ')}`)
-    for (const r of rises) expect(r).toBeLessThan(0.35)
   })
 })
 

@@ -367,10 +367,13 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
               ))}
             </optgroup>
           </select>
-          {isNature(params.noiseType) && (
+          {isNature(params.noiseType) && params.noiseType !== 'storm' && (
+            <small>Sonido generado por síntesis (no es una grabación) y siempre suave, sin picos repentinos.</small>
+          )}
+          {params.noiseType === 'storm' && (
             <small>
-              Sonido generado por síntesis (no es una grabación) y siempre suave, sin picos repentinos.
-              {params.noiseType === 'storm' && ' Incluye truenos lejanos y espaciados.'}
+              Sonido generado por síntesis (no es una grabación). Incluye truenos, algunos con un inicio seco y fuerte:
+              si eres sensible a los ruidos fuertes, elige otro fondo.
             </small>
           )}
           {isMeditation(params.noiseType) && (
@@ -378,7 +381,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
               Sonido generado por síntesis (no es una grabación): suena artificial.
               {params.noiseType === 'bowls'
                 ? ' Un cuenco suena cada 7–16 s, con entrada suave.'
-                : ' Un gong profundo suena cada 18–34 s: crece despacio y se apaga muy lentamente.'}{' '}
+                : ' Un gong profundo suena cada 18–34 s, con un golpe de maza seco al principio, y se apaga muy lentamente. Si eres sensible a los ruidos fuertes, elige otro fondo.'}{' '}
               Es un fondo con tono: puede batir con la portadora; si molesta, cambia una de las dos.
             </small>
           )}

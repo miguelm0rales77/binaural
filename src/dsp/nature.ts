@@ -209,59 +209,123 @@ export class RiverGen implements NatureGen {
   }
 }
 
-/** Trueno: rumor grave con ataque suave (0,6–1,4 s) y decaimiento largo, a intervalos aleatorios. */
+const ROLLS = 4
+/** Ganancias de las tres capas del trueno (calibradas con las medidas de los tests). */
+const THUNDER_LOW = 15
+const THUNDER_MID = 4.6
+const THUNDER_CRACK = 1.4
+
+export interface ThunderOptions {
+  /** Segundos hasta el primer trueno (por defecto 5–12 s al azar). */
+  firstWaitSec?: number
+  /** 0 = muy cercano (chasquido y ataque rápido), 1 = muy lejano (solo retumbo suave). Por defecto al azar. */
+  distance?: number
+}
+
+/**
+ * Trueno en tres capas, para que se oiga con cualquier altavoz y con auriculares:
+ *  - retumbo grave (< ~150 Hz) para auriculares, con varias «oleadas» irregulares;
+ *  - retumbo medio (200–1000 Hz) que se reproduce en altavoces pequeños de portátil o móvil;
+ *  - chasquido de banda ancha al principio (más fuerte cuanto más cercano), con un eco.
+ * El ataque es de 50 ms (cercano) a 650 ms (lejano): un trueno real no entra en silencio. Quien sea sensible
+ * a los ruidos fuertes no debería usar la tormenta (la interfaz lo avisa).
+ */
 export class Thunder {
   private readonly lp1: LP
   private readonly lp2: LP
+  private readonly midHp: HP
+  private readonly midLp: LP
+  private readonly crackBp: BandPass
+  private readonly rollT = new Float64Array(ROLLS)
+  private readonly rollA = new Float64Array(ROLLS)
+  private readonly rollW = new Float64Array(ROLLS)
   private t = 0
-  private attack = 0
-  private tau = 1
+  private attack = 0 // s
+  private tauLow = 1 // s
+  private tauMid = 0.5 // s
   private amp = 0
+  private midGain = 1
+  private crackAmp = 0
+  private crack2At = 0 // s
+  private crack2Amp = 0
   private active = false
   private wait: number
   private readonly rand: Rand
   private readonly fs: number
-  private readonly meanIntervalSec: number
-  constructor(rand: Rand, fs: number, meanIntervalSec: number) {
+  private readonly invFs: number
+  private readonly meanWaitSec: number
+  private readonly forcedDistance: number | undefined
+
+  /** `meanWaitSec`: media de la espera (exponencial, entre 4 y 30 s) entre el final de un trueno y el siguiente. */
+  constructor(rand: Rand, fs: number, meanWaitSec: number, opts: ThunderOptions = {}) {
     this.rand = rand
     this.fs = fs
-    this.meanIntervalSec = meanIntervalSec
+    this.invFs = 1 / fs
+    this.meanWaitSec = meanWaitSec
+    this.forcedDistance = opts.distance
     this.lp1 = new LP(85, fs)
     this.lp2 = new LP(140, fs)
-    this.wait = this.nextWait(true)
+    this.midHp = new HP(200, fs)
+    this.midLp = new LP(1000, fs)
+    this.crackBp = new BandPass(fs)
+    this.wait = (opts.firstWaitSec ?? 5 + 7 * rand()) * fs
   }
-  private nextWait(first: boolean): number {
-    const u = this.rand()
-    const sec = first ? 8 + 10 * u : Math.min(60, Math.max(10, -Math.log(1 - u) * this.meanIntervalSec))
-    return sec * this.fs
+
+  private begin(): void {
+    const dist = this.forcedDistance ?? this.rand()
+    this.active = true
+    this.t = 0
+    this.attack = 0.05 + 0.6 * dist
+    this.tauLow = 0.9 + 0.6 * this.rand()
+    this.tauMid = 0.55 * this.tauLow
+    this.amp = 0.65 + 0.35 * this.rand()
+    this.midGain = 1 - 0.5 * dist
+    this.crackAmp = dist < 0.75 ? 0.9 * Math.pow(1 - dist / 0.75, 1.5) : 0
+    this.crack2At = 0.12 + 0.35 * this.rand()
+    this.crack2Amp = 0.45 * this.crackAmp
+    for (let j = 0; j < ROLLS; j++) {
+      this.rollT[j] = this.attack + 0.6 + (j + 0.6 * this.rand()) * 0.9 // «oleadas» irregulares
+      this.rollA[j] = 0.5 + 0.7 * this.rand()
+      this.rollW[j] = 0.25 + 0.35 * this.rand()
+    }
   }
+
   tick(): number {
     if (!this.active) {
       if (--this.wait > 0) return 0
-      this.active = true
-      this.t = 0
-      this.attack = (0.6 + 0.8 * this.rand()) * this.fs
-      this.tau = (1.5 + 1.5 * this.rand()) * this.fs
-      this.amp = 0.5 + 0.5 * this.rand()
+      this.begin()
     }
-    const t = this.t++
-    let env: number
-    if (t < this.attack) env = 0.5 - 0.5 * Math.cos((Math.PI * t) / this.attack)
-    else {
-      env = Math.exp(-(t - this.attack) / this.tau)
-      if (env < 1e-3) {
-        this.active = false
-        this.wait = this.nextWait(false)
-        return 0
-      }
+    const ts = this.t++ * this.invFs
+    const atk = this.attack
+    // cuerpo del retumbo: subida en coseno alzado y decaimiento exponencial, modulado por las oleadas
+    const baseLow = ts < atk ? 0.5 - 0.5 * Math.cos((Math.PI * ts) / atk) : Math.exp(-(ts - atk) / this.tauLow)
+    if (ts > atk && baseLow < 1e-3) {
+      this.active = false
+      this.wait = Math.min(30, Math.max(4, -Math.log(1 - this.rand()) * this.meanWaitSec)) * this.fs
+      return 0
     }
-    const roll = 0.75 + 0.25 * Math.sin((TWO_PI * 3.5 * t) / this.fs)
-    const n = this.lp2.tick(this.lp1.tick(noise(this.rand)))
-    return n * 18 * env * roll * this.amp
+    const baseMid = ts < atk ? baseLow : Math.exp(-(ts - atk) / this.tauMid)
+    let rolls = 1
+    for (let j = 0; j < ROLLS; j++) {
+      const d = (ts - (this.rollT[j] as number)) / (this.rollW[j] as number)
+      rolls += (this.rollA[j] as number) * Math.exp(-0.5 * d * d)
+    }
+    // chasquido (y su eco): ataque de 12–20 ms, decaimiento rápido
+    let crack = 0
+    if (this.crackAmp > 0 && ts < this.crack2At + 1.5) {
+      crack = this.crackAmp * (ts < 0.012 ? 0.5 - 0.5 * Math.cos((Math.PI * ts) / 0.012) : Math.exp(-(ts - 0.012) / 0.1))
+      const t2 = ts - this.crack2At
+      if (t2 >= 0) crack += this.crack2Amp * (t2 < 0.02 ? 0.5 - 0.5 * Math.cos((Math.PI * t2) / 0.02) : Math.exp(-(t2 - 0.02) / 0.14))
+    }
+    const n = noise(this.rand)
+    const low = this.lp2.tick(this.lp1.tick(n))
+    const mid = this.midLp.tick(this.midHp.tick(n))
+    const cr = this.crackBp.tick(n, 1400, 0.6)
+    return this.amp * (THUNDER_LOW * low * baseLow * rolls + THUNDER_MID * this.midGain * mid * baseMid * rolls + THUNDER_CRACK * cr * crack)
   }
 }
 
-/** Tormenta: lluvia intensa + viento grave + truenos suaves y espaciados. */
+/** Tormenta: lluvia intensa + viento grave + truenos (graves, medios y con chasquido si son cercanos). */
 export class StormGen implements NatureGen {
   private readonly rain: RainGen
   private readonly wind: WindGen
@@ -270,7 +334,7 @@ export class StormGen implements NatureGen {
   constructor(rand: Rand, fs: number, level = 0.8) {
     this.rain = new RainGen(rand, fs, 1, 1)
     this.wind = new WindGen(rand, fs, 0.5, 300)
-    this.thunder = new Thunder(rand, fs, 25)
+    this.thunder = new Thunder(rand, fs, 12)
     this.level = level
   }
   next(): number {
