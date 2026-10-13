@@ -1,7 +1,6 @@
 # Etapa 1 — Búsqueda: binaurales (§4.1, B01–B20)
 
-Estado: en curso. Consensus con límite de frecuencia: se lanza una búsqueda cada vez.
-Los estudios no están todavía verificados en PubMed (DOI/PMID). Esta fase no saca conclusiones.
+Estado: búsquedas completas (B01–B20). Verificación en PubMed: en curso, ver la sección al final y bibliografia-binaurales.csv. Esta fase no saca conclusiones.
 
 ## B01 — Do binaural beats reduce anxiety?
 Sin filtros. Resultados relevantes:
@@ -104,7 +103,7 @@ Sin filtros de diseño (la consulta incluye "randomized controlled trial" como t
 - Shukla et al., 2025 (Int J Clin Pediatr Dent). Revisión y metaanálisis de 9 estudios dentales. Riesgo de sesgo alto. Reducción de ansiedad frente a control; dolor, resultados no concluyentes. Afirmaciones: A6, A5.
 - Akkurt et al., 2026 (Int J Oral Maxillofac Surg). ECA de 90 pacientes, cirugía de tercer molar. BB e isocrónicos frente a control: sin diferencias en ansiedad. Solo diferencias aisladas en parámetros fisiológicos. Afirmaciones: A6 (dato a favor de la hipótesis nula), A13 (no aplica).
 - Zaki et al., 2025 (JPMA). ECA doble ciego de 99 pacientes, endodoncia: BB y música de 432 Hz ambos reducen ansiedad frente a ruido blanco, sin diferencia entre ellos. Afirmaciones: A6, A12 (432 Hz sin ventaja).
-- Menziletoğlu et al., 2020 (Med Oral Patol Oral Cir Bucal). 90 pacientes, tercer molar: BB y música de 432 Hz reducen ansiedad frente a control. Afirmaciones: A6, A12.
+- Menziletoğlu et al., 2021 (Med Oral Patol Oral Cir Bucal). 90 pacientes, tercer molar: BB y música de 432 Hz reducen ansiedad frente a control. Afirmaciones: A6, A12.
 - Madhumitha et al., 2025 (J Indian Soc Periodontol). ECA de 50 pacientes, cirugía periodontal, BB frente a sin intervención. Reducción de ansiedad y de FC. Afirmaciones: A6.
 - Işık et al., 2017 (BJOMS). ECA de 60 pacientes, tercer molar: BB (200 y 209,3 Hz) frente a control. Reducción de ansiedad. Afirmaciones: A6.
 - Salehabadi et al., 2023 (Int Dent J). Ensayo clínico de 80 pacientes, cirugía de tercer molar, BB frente a control. Reducción de ansiedad. Afirmaciones: A6.
@@ -267,7 +266,7 @@ Sin filtros. Comparaciones directas con música: no aparece ninguna en la que lo
 - Bhusari et al., 2025 (J Oral Biol Craniofac Res). ECA triple brazo, 75 niños en odontología: binaurales y música elegida reducen ansiedad frente a control; sin comparación directa entre ambos. Afirmaciones: A15.
 - Bhusari et al., 2023 (J Indian Soc Pedod Prev Dent). ECA de 45 niños: binaurales mejor que binaurales monoaurales y que control. Afirmaciones: A15 (binaurales frente a monoaurales, no frente a música).
 - Zaki et al., 2025 (JPMA). ECA doble ciego, 99 pacientes, 432 Hz frente a binaurales frente a ruido blanco: ambos iguales, mejores que control. Afirmaciones: A15, A12.
-- Menziletoğlu et al., 2020 (Med Oral Patol Oral Cir Bucal). 90 pacientes: binaurales y música de 432 Hz iguales. Afirmaciones: A15, A12.
+- Menziletoğlu et al., 2021 (Med Oral Patol Oral Cir Bucal). 90 pacientes: binaurales y música de 432 Hz iguales. Afirmaciones: A15, A12.
 - Xiong et al., 2025 (metaanálisis). Frente a audio sin binaurales: SMD −1,01 para ansiedad, I² = 95 %. Es la única comparación agregada, con la heterogeneidad más alta de la búsqueda. Afirmaciones: A15, A6.
 - Elnazer, 2026 (revisión de jóvenes). Terapia musical nocturna y binaurales con efectos moderados (d 0,3–0,6), mezclados. Afirmaciones: A15 (contexto).
 
@@ -288,6 +287,8 @@ Búsquedas lanzadas: B01–B20 (20 de 20). Con límite de frecuencia: B01 y B03 
 9. Aviso de fuentes: Oberle 2022 (programa de una app comercial), Boasso 2023 y Funk 2022 (financiación o centro comercial). No pueden ser base de ninguna afirmación.
 
 ## Verificación en PubMed (estado al cierre de esta sesión)
-Verificadas (PMID y DOI confirmados por metadatos): Garcia-Argibay 2018; Ingendoh 2023; Xiong 2025; Klichowski 2023; Vickrey 2023; Dos Anjos 2024; Harrington 2021; Ngo 2013; Schneider 2020; Basner 2026; Chan 2022; Hsiung 2024. Total: 12.
-No encontradas o pendientes: Soula 2023 (tres consultas sin resultado). El resto de referencias del bloque (unas 40) aún no están verificadas y no se deben citar hasta comprobarlas.
-Correcciones a este archivo: Schneider es de 2020 (no 2019). Harrington 2021 (n = 12, sin beneficio en memoria con CLAS) se añade a B14 como estudio primario. El PMID que yo había asociado a "Ngo 2013" era de otro artículo; el correcto es 23583623.
+Verificadas (PMID y DOI confirmados por metadatos): Garcia-Argibay 2018; Ingendoh 2023; Xiong 2025; Shukla 2025; Isik 2017; Menziletoğlu 2021; Zaki 2025; Fatima 2026; Shamsi 2024; Sforza 2026; Gkolias 2020; Orozco Perez 2020; Klichowski 2023; Vickrey 2023; Dos Anjos 2024; Harrington 2021; Ngo 2013; Schneider 2020; Basner 2026; Chan 2022; Hsiung 2024; Wu 2025; Ang 2025; Soula 2023. Total: 24 de 32 filas del CSV (incluye exclusiones).
+No encontradas en PubMed (no citar hasta buscarlas en otra base): Perrott & Nelson 1969; Pang 2024; Calamassi 2019 y 2022 (las búsquedas por apellido y por título no dieron resultados).
+Excluidas por fuente comercial o no primaria: Boasso 2023, Oberle 2022, Funk 2022 (comerciales); Oster 1973 (divulgación).
+Correcciones a este archivo: Schneider es de 2020 (no 2019). Harrington 2021 (n = 12, sin beneficio en memoria con CLAS) se añade a B14 como estudio primario. El PMID que yo había asociado a "Ngo 2013" era de otro artículo; el correcto es 23583623. Soula 2023 sí está en PubMed (PMID 36879142): la marca "no encontrado" anterior era un error mío. Menziletoğlu es de 2021 según PubMed, no de 2020.
+Las referencias del resto del bloque (incluidas las citadas en las lecturas preliminares) siguen sin verificar y no se deben citar hasta comprobarlas en PubMed o en el CSV.
