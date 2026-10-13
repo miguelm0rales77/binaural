@@ -610,3 +610,118 @@ input[type='number'] {
   color: var(--muted);
   font-size: 0.875rem;
 }
+
+/* Respiración guiada (Bloque B) */
+.breath {
+  margin-bottom: 8px;
+}
+
+.breath > h2 {
+  margin-top: 8px;
+}
+
+.breath-intro {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.breath-safety {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  background: #121722;
+}
+
+.breath-safety h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.breath-safety ul {
+  padding-left: 18px;
+  margin: 0 0 10px;
+  font-size: 0.9375rem;
+}
+
+.breath-stage {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.breath-circle {
+  width: min(64vw, 260px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* Un disco que solo cambia de tamaño: sin destellos ni cambios de color rápidos */
+.breath-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #2b5f63, #17363d 70%);
+  transform: scale(0.55);
+  will-change: transform;
+}
+
+.breath-label {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.breath-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-height: 1.2em;
+}
+
+.breath-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.breath-presets button[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.breath-custom,
+.breath-cues {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 14px 12px;
+  margin: 12px 0;
+}
+
+.breath-custom legend,
+.breath-cues legend {
+  padding: 0 6px;
+  color: var(--muted);
+}
+
+.breath-summary {
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.breath-summary p {
+  margin: 0 0 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breath-disc {
+    will-change: auto;
+  }
+}

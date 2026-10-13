@@ -96,3 +96,18 @@
 - **Rangos:** el motor acepta 3–12 rpm, `inhaleRatio` 0,2–0,8 y retenciones de 0–20 s; la interfaz usará los rangos del plan (4–7 rpm, 0,3–0,5).
 - **Pruebas:** `tests/breath.test.ts` (11 + 1 pruebas): duraciones 4,0 s y 6,0 s (±1 ms), continuidad del pulmón (<1e-3 por muestra a 48 kHz), rampa, retenciones, campanilla (±1 muestra), frecuencia del guía (330/220 Hz ±1 %), nivel −18 dB, correlación del oleaje (r > 0,9), silencio exacto sin oleaje, fundido de 30 s y longitud del bucle.
 - **Pendiente manual:** «con los ojos cerrados se puede seguir el ritmo solo con el oleaje» se comprobará al escuchar, no con tests.
+
+## Bloque B — Fase 9: interfaz de respiración, presets y sesiones
+- **Pantalla:** «Respirar» es una sección dentro de la misma pantalla de reproducción, no una ruta aparte. Así comparte un único motor de audio y un único estado con los presets de sonido.
+- **Círculo:** se actualiza en cada fotograma con refs (sin re-renderizar React). Lee el reloj del contexto de audio: `AudioController.breathTimeSec()` = tiempo del contexto − inicio − `breathOriginSec` (que informa el motor). Solo cambia de tamaño; sin destellos. Cuenta atrás con `phaseLengthSec`.
+- **Labios fruncidos:** solo es un texto durante la espiración (no se guarda).
+- **Rangos:** rpm en pasos de 0,5 entre 4,0 y 7,0; proporción 0,30–0,50 (el motor acepta más). Modo personalizado: segundos de inspiración, retención, espiración y retención; el ritmo sale del ciclo completo (`patternFromSeconds`), y 4-4-4-4 se puede montar, sin ser preset.
+- **Rampa:** casilla «Rampa de entrada» (8 → ritmo en 120 s). Se fusiona con cuidado: un parche que menciona la rampa manda sobre la del estado; si no la menciona, se conserva. Sin esto, un patrón parcial heredaba la rampa por defecto (bug encontrado en los tests).
+- **Valor por defecto:** el patrón es resonancia 6 con rampa, pero la guía viene desactivada; el usuario la activa.
+- **Presets de respiración:** «Resonancia 6» (20 min, con rampa), «Microdosis 3 min» (6 rpm sin rampa) y «Pre-sueño 5,5 rpm» (proporción 0,35, ruido marrón, sin campanilla). Cada uno fija el patrón, las señales y la duración del temporizador.
+- **Presets de sonido:** Relajación (alfa) y Pre-sueño llevan la respiración activada; el resto la apaga y conserva el patrón del usuario. Pre-sueño la limita a 10 min (`maxSec: 600`), con fundido de 30 s. Los presets sin respiración ponen `maxSec: null` para no heredar el límite de otro preset.
+- **Tipos:** los presets aceptan un parche parcial de respiración (`ParamsPatch`, `BreathPatch`); el motor y `sanitizeParams` lo fusionan.
+- **Resumen:** al terminar una sesión con respiración de al menos 1 min aparece el resumen (duración y rpm). El registro de práctica llega en la Fase 10.
+- **Primer uso de respiración:** el aviso de seguridad del plan (B4) se muestra una vez, hasta pulsar «Entendido» (`binaural:breath-safety:v1`).
+- **Comprobación:** tests de ritmo, segundos, cuenta atrás, presets y fusión de la rampa (`tests/breathing.test.ts`). Con Chromium headless (390 px): sin desbordamiento horizontal (scrollWidth = 390) y sin errores de consola.
+- **Pendiente manual:** sesión de 20 min en ordenador y en iPhone con la pantalla bloqueada (modo de segundo plano con señales).

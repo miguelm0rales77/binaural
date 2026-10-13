@@ -7,7 +7,7 @@ import { Oscillator, TWO_PI } from './oscillator'
 import { MASTER_CEILING, NATURE_TYPES, sanitizeParams } from './params'
 import { evalProgram, type ProgramValue } from './program'
 import { Smoother } from './smoothing'
-import { DEFAULT_PARAMS, type EngineParams, type Program } from './types'
+import { DEFAULT_PARAMS, type EngineParams, type ParamsPatch, type Program } from './types'
 
 /** Muestras por paso de control (parámetros lentos: programa, temporizador, compensación). */
 const CONTROL_BLOCK = 128
@@ -147,7 +147,7 @@ export class DspEngine {
 
   readonly fs: number
 
-  constructor(fs: number, initial: Partial<EngineParams> = {}, opts: EngineOptions = {}) {
+  constructor(fs: number, initial: ParamsPatch = {}, opts: EngineOptions = {}) {
     this.fs = fs
     this.masterCeiling = opts.masterCeiling ?? MASTER_CEILING
     this.softClip = opts.softClip ?? true
@@ -219,7 +219,7 @@ export class DspEngine {
    * Cambia parámetros con suavizado. Si el usuario toca beatHz o carrierHz
    * mientras corre un programa, el programa se cancela.
    */
-  setParams(patch: Partial<EngineParams>): void {
+  setParams(patch: ParamsPatch): void {
     const prevBreath = this.params.breath
     this.params = sanitizeParams(this.params, patch, this.masterCeiling)
     const p = this.params

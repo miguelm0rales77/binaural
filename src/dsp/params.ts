@@ -35,7 +35,14 @@ function num(v: unknown, fallback: number, key: NumericKey, max: number = RANGES
 
 function sanitizeBreath(base: BreathConfig, v: unknown): BreathConfig {
   const o = (v && typeof v === 'object' ? v : {}) as Partial<BreathConfig>
-  const pattern = o.pattern && typeof o.pattern === 'object' ? { ...base.pattern, ...o.pattern } : base.pattern
+  // Un patrón parcial se fusiona con el actual, pero la rampa es un bloque: si el parche la menciona
+  // (aunque sea undefined), manda el parche; si no, se conserva la del estado actual.
+  const pt = (o.pattern && typeof o.pattern === 'object' ? o.pattern : {}) as Partial<BreathConfig['pattern']>
+  const pattern = { ...base.pattern, ...pt }
+  if (!('rampFromRpm' in pt)) {
+    pattern.rampFromRpm = base.pattern.rampFromRpm
+    pattern.rampSec = base.pattern.rampSec
+  }
   const cues = o.cues && typeof o.cues === 'object' ? { ...base.cues, ...o.cues } : base.cues
   let maxSec = base.maxSec
   if (o.maxSec === null) maxSec = null

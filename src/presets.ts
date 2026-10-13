@@ -1,6 +1,7 @@
 import { isNature } from './dsp/params'
 import type { BeatMode, NoiseType, Preset, Program } from './dsp/types'
 import { bandFor } from './bands'
+import { DEFAULT_CUES, makePattern } from './breathing'
 
 export const MODE_LABELS: Record<BeatMode, string> = {
   binaural: 'Binaural',
@@ -35,39 +36,59 @@ export const PRE_SLEEP_PROGRAM: Program = {
 }
 
 /**
- * Presets integrados. Solo fijan modo, frecuencias y ruido: no tocan los volúmenes del usuario.
- * Los nombres son descriptivos y no prometen ningún efecto.
+ * Presets integrados. Fijan modo, frecuencias, ruido y el metrónomo de respiración; no tocan los volúmenes
+ * del usuario. Los que no llevan respiración la apagan y conservan el patrón del usuario (`maxSec` se
+ * reinicia para que un límite de otro preset no se herede). Los nombres no prometen ningún efecto.
  */
 export const PRESETS: readonly Preset[] = [
   {
     id: 'relax-alpha',
     name: 'Relajación (alfa)',
-    params: { mode: 'binaural', carrierHz: 250, beatHz: 10, noiseType: 'pink', noiseGain: 0.15 },
+    params: {
+      mode: 'binaural',
+      carrierHz: 250,
+      beatHz: 10,
+      noiseType: 'pink',
+      noiseGain: 0.15,
+      breath: { enabled: true, pattern: makePattern(6, 0.4, { ramp: true }), cues: DEFAULT_CUES, maxSec: null },
+    },
     suggestedMinutes: 20,
   },
   {
     id: 'focus-beta',
     name: 'Concentración (beta)',
-    params: { mode: 'binaural', carrierHz: 400, beatHz: 16, noiseType: 'pink', noiseGain: 0.15 },
+    params: { mode: 'binaural', carrierHz: 400, beatHz: 16, noiseType: 'pink', noiseGain: 0.15, breath: { enabled: false, maxSec: null } },
     suggestedMinutes: 30,
   },
   {
     id: 'meditation-theta',
     name: 'Meditación (theta)',
-    params: { mode: 'binaural', carrierHz: 200, beatHz: 6, noiseType: 'none' },
+    params: { mode: 'binaural', carrierHz: 200, beatHz: 6, noiseType: 'none', breath: { enabled: false, maxSec: null } },
     suggestedMinutes: 20,
   },
   {
     id: 'pre-sleep',
     name: 'Pre-sueño (programa)',
-    params: { mode: 'binaural', carrierHz: 200, beatHz: 10, noiseType: 'brown', noiseGain: 0.25 },
+    params: {
+      mode: 'binaural',
+      carrierHz: 200,
+      beatHz: 10,
+      noiseType: 'brown',
+      noiseGain: 0.25,
+      breath: {
+        enabled: true,
+        pattern: makePattern(5.5, 0.35),
+        cues: { swell: true, guideTone: false, chime: false },
+        maxSec: 600, // 10 min de respiración; después, fundido de 30 s y solo audio
+      },
+    },
     program: PRE_SLEEP_PROGRAM,
     suggestedMinutes: 30,
   },
   {
     id: 'gamma-40',
     name: 'Reflexión (gamma)',
-    params: { mode: 'isochronic', carrierHz: 400, beatHz: 40, isoDepth: 0.8, noiseType: 'none' },
+    params: { mode: 'isochronic', carrierHz: 400, beatHz: 40, isoDepth: 0.8, noiseType: 'none', breath: { enabled: false, maxSec: null } },
     suggestedMinutes: 15,
   },
 ]
@@ -92,6 +113,8 @@ export function describePreset(p: Preset): string {
   if (noise !== 'none') {
     parts.push(isNature(noise) ? NOISE_LABELS[noise].toLowerCase() : `ruido ${NOISE_LABELS[noise].toLowerCase()}`)
   }
+  const b = p.params.breath
+  if (b?.enabled && b.pattern?.rpm !== undefined) parts.push(`respiración ${+b.pattern.rpm.toFixed(1)} rpm`)
   if (p.suggestedMinutes !== null) parts.push(`${p.suggestedMinutes} min`)
   return parts.join(' · ')
 }

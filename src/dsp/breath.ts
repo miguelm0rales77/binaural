@@ -134,3 +134,31 @@ export function breathState(t: number, p: BreathPattern): BreathState {
 export function cyclePeriodSec(p: BreathPattern): number {
   return 60 / p.rpm
 }
+
+/**
+ * Duración (s) de la fase `phase` al ritmo del instante `t` (coherente con `breathStateInto`).
+ * La interfaz la usa para la cuenta atrás.
+ */
+export function phaseLengthSec(phase: BreathPhase, t: number, p: BreathPattern): number {
+  const rate = rpmAt(t, p) / 60
+  const period = 1 / rate
+  let hIn = p.holdInSec * rate
+  let hOut = p.holdOutSec * rate
+  const holds = hIn + hOut
+  if (holds > 0.8) {
+    hIn *= 0.8 / holds
+    hOut *= 0.8 / holds
+  }
+  const b = 1 - hIn - hOut
+  const ratio = clamp(p.inhaleRatio, 0.2, 0.8)
+  switch (phase) {
+    case 'in':
+      return ratio * b * period
+    case 'holdIn':
+      return hIn * period
+    case 'out':
+      return (1 - ratio) * b * period
+    case 'holdOut':
+      return hOut * period
+  }
+}

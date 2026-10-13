@@ -7,7 +7,8 @@ import type { BreathConfig, BreathCues, EngineParams } from '../src/dsp/types'
 
 const FS = 48000
 
-const pat = (o: Partial<BreathPattern> = {}): BreathPattern => ({ ...RESONANCE_PATTERN, ...o })
+// Sin rampa salvo que se pida: las claves van explícitas para que el motor no herede la rampa por defecto
+const pat = (o: Partial<BreathPattern> = {}): BreathPattern => ({ ...RESONANCE_PATTERN, rampFromRpm: undefined, rampSec: undefined, ...o })
 
 function breath(o: { enabled?: boolean; maxSec?: number | null; pattern?: Partial<BreathPattern>; cues?: Partial<BreathCues> } = {}): BreathConfig {
   return {

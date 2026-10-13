@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AudioController, type StateInfo } from './audio/AudioController'
 import { BackgroundPlayer, type BackgroundState } from './audio/BackgroundPlayer'
 import { bandFor } from './bands'
-import type { EngineParams, NoiseType, Preset, Program } from './dsp/types'
+import type { BreathConfig, EngineParams, NoiseType, Preset, Program } from './dsp/types'
 import { MASTER_CEILING, NATURE_TYPES, RANGES, isNature, sanitizeParams } from './dsp/params'
+import { BREATH_PRESETS, describePattern } from './breathing'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
   ACCEPTED_KEY,
+  BREATH_SAFETY_KEY,
   ISO_WARNING_KEY,
   TIMER_OPTIONS_MIN,
   cleanPresetName,
@@ -20,6 +22,7 @@ import {
 import { BAND_NOTE, ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
+import { BreathPanel, type BreathSummaryData } from './ui/BreathPanel'
 import { ExportPanel } from './ui/ExportPanel'
 import { Pulse } from './ui/Pulse'
 import { FirstUse } from './ui/FirstUse'
@@ -90,13 +93,25 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [info, setInfo] = useState<StateInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
+  const [breathSafetySeen, setBreathSafetySeen] = useState(() => readFlag(BREATH_SAFETY_KEY))
+  const [summary, setSummary] = useState<BreathSummaryData | null>(null)
+  // Datos de la sesión en curso, para el resumen al terminar (el callback de parada no ve el estado actual).
+  const session = useRef({ breath: false, rpm: 6, description: '', elapsedSec: 0 })
 
   useEffect(() => {
     const c = new AudioController()
-    c.onState = setInfo
+    c.onState = (s) => {
+      session.current.elapsedSec = s.elapsedSec
+      setInfo(s)
+    }
     c.onStopped = () => {
       setStatus('stopped')
       setInfo(null)
+      const s = session.current
+      if (s.breath && s.elapsedSec >= 60) {
+        setSummary({ minutes: s.elapsedSec / 60, rpm: s.rpm, description: s.description })
+      }
+      s.breath = false
     }
     controller.current = c
     const b = new BackgroundPlayer()
@@ -146,6 +161,24 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     }
   }
 
+  /** Cambia el metrónomo (fusiona el parche con el estado actual). */
+  const updateBreath = (patch: Partial<BreathConfig>) => {
+    update({ breath: { ...params.breath, ...patch } })
+  }
+
+  /** Preset de respiración: fija patrón, señales, duración y, si lo tiene, el tipo de fondo. */
+  const applyBreathPreset = (id: string) => {
+    const b = BREATH_PRESETS.find((x) => x.id === id)
+    if (!b) return
+    update({
+      breath: { ...params.breath, enabled: true, pattern: b.pattern, cues: b.cues, maxSec: null },
+      ...(b.noise ? { noiseType: b.noise } : {}),
+    })
+    changeTimer(b.minutes)
+  }
+
+  const getBreathTime = useCallback(() => controller.current?.breathTimeSec() ?? null, [])
+
   const savePreset = (rawName: string) => {
     const name = cleanPresetName(rawName)
     if (!name) return
@@ -176,6 +209,13 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     bg.current?.stop() // el audio normal y el de segundo plano no suenan a la vez
     setStatus('starting')
     setError(null)
+    setSummary(null)
+    session.current = {
+      breath: params.breath.enabled,
+      rpm: params.breath.pattern.rpm,
+      description: describePattern(params.breath.pattern),
+      elapsedSec: 0,
+    }
     try {
       await c.play(params, program, timerMin === null ? null : timerMin * 60)
       setStatus('playing')
@@ -417,6 +457,24 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
           <small>Cuenta desde que lo eliges. Al terminar, el sonido se apaga con un fundido de 8 s.</small>
         </div>
       </section>
+
+      <BreathPanel
+        breath={params.breath}
+        onChange={updateBreath}
+        onPattern={(pattern) => updateBreath({ pattern })}
+        onPreset={applyBreathPreset}
+        timerMin={timerMin}
+        onTimer={changeTimer}
+        playing={status === 'playing'}
+        getTime={getBreathTime}
+        safetySeen={breathSafetySeen}
+        onSafetySeen={() => {
+          writeFlag(BREATH_SAFETY_KEY)
+          setBreathSafetySeen(true)
+        }}
+        summary={summary}
+        onCloseSummary={() => setSummary(null)}
+      />
 
       <ExportPanel params={params} program={program} timerMin={timerMin} disabled={!accepted} />
 
