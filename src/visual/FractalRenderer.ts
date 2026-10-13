@@ -44,7 +44,7 @@ export class FractalRenderer {
   private readonly gl: WebGL2RenderingContext
   private readonly program: WebGLProgram
   private readonly loc: Record<(typeof UNIFORMS)[number], WebGLUniformLocation | null>
-  private readonly quality: QualityGovernor
+  private readonly quality = new QualityGovernor()
   private readonly reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
   private readonly seed = 7
   private target: VisualParams
@@ -73,8 +73,6 @@ export class FractalRenderer {
     const loc = {} as Record<(typeof UNIFORMS)[number], WebGLUniformLocation | null>
     for (const name of UNIFORMS) loc[name] = gl.getUniformLocation(this.program, name)
     this.loc = loc
-    const mobile = window.matchMedia('(pointer: coarse)').matches
-    this.quality = new QualityGovernor(mobile)
     this.target = initial
     const p = PALETTES[initial.palette]
     this.live = {
@@ -182,7 +180,8 @@ export class FractalRenderer {
     gl.uniform3f(u.u_pc, L.pal[6] as number, L.pal[7] as number, L.pal[8] as number)
     gl.uniform3f(u.u_pd, L.pal[9] as number, L.pal[10] as number, L.pal[11] as number)
     gl.uniform1i(u.u_seed, this.seed)
-    gl.uniform1i(u.u_octaves, q.octaves)
+    // Octavas del preset; si se ha degradado, una menos (sin bajar de 1).
+    gl.uniform1i(u.u_octaves, q.degraded ? Math.max(1, tg.octaves - 1) : tg.octaves)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
 }

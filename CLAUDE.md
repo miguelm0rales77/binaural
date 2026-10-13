@@ -8,7 +8,7 @@ presets, temporizador, exportación a WAV y reproducción en segundo plano. **To
 - Detalle de todas las decisiones y por qué: **`DECISIONES.md`** (léelo antes de cambiar algo). `README.md` = uso y despliegue.
 
 ## Estado (fases 0–7 del plan original hechas, más extras)
-React 18 + TypeScript estricto + Vite + Vitest + `vite-plugin-pwa`. **233 tests** (1 pendiente). Fases 0–10 del plan hechas (0–7 publicadas; 8 a 10 en commits locales, sin push), y además:
+React 18 + TypeScript estricto + Vite + Vitest + `vite-plugin-pwa`. **233 tests**. Fases 0–14 del plan hechas (0–7 publicadas; 8 a 14 en commits locales, sin push), y además:
 sensibilidad sensorial (aviso TEA/hiperacusis), volúmenes de arranque bajos, techo de volumen 0,8, fondos sintetizados
 (naturaleza: lluvia, viento, tormenta con truenos, río, bosque; meditación: cuencos tibetanos y gong), estilo de marca
 Como Sentirse Bien (claro crema / oscuro verde bosque según el sistema), icono de auriculares con onda de batido.
@@ -39,7 +39,7 @@ Los tests de DSP renderizan minutos de audio: pueden tardar si la máquina está
 
 ## Pendiente
 Decisiones tomadas en la revisión de pendientes (decidido por el usuario):
-- **Plan `docs/PLAN-app-binaural.md`** (copiado al repo): Fases 0 y 1 ya estaban hechas (commits `fase 0` y `fase 1`). Fases 8 (reloj respiratorio, `src/dsp/breath.ts`) y 9 (sección «Respirar», presets y sesiones) hechas. Fase 10 hecha (registro de práctica y «Mi frecuencia»). Bloque C: fases 11–13 hechas (vista fractal, presets, seguridad visual). **Fase 14 pendiente de decisión del usuario** (ver DECISIONES.md: con las 6 octavas del plan, D ≈ 1,8 y no 1,25–1,55). Pendiente de respiración: bucle de exportación y segundo plano sin respiración (ciclos enteros). Ejecutar fase a fase con parada para revisión.
+- **Plan `docs/PLAN-app-binaural.md`** (copiado al repo): Fases 0 y 1 ya estaban hechas (commits `fase 0` y `fase 1`). Fases 8 (reloj respiratorio, `src/dsp/breath.ts`) y 9 (sección «Respirar», presets y sesiones) hechas. Fase 10 hecha (registro de práctica y «Mi frecuencia»). Bloque C: fases 11–13 hechas (vista fractal, presets, seguridad visual). Fase 14 hecha con octavas por preset (2 o 3) para cumplir D 1,25–1,55 (decisión del usuario, ver DECISIONES.md). Pendiente de respiración: bucle de exportación y segundo plano sin respiración (ciclos enteros). Ejecutar fase a fase con parada para revisión.
 - **Bloque D (biofeedback con sensor de pulso): no se realiza por ahora.** No preguntar la plataforma hasta que se retome.
 - Códigos de activación **firmados** (Ed25519): **aplazados**.
 - Licencia: **todos los derechos reservados** por ahora.

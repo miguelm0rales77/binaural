@@ -17,23 +17,17 @@ function run(gov: QualityGovernor, fps: number, seconds: number, start = 0) {
 
 describe('calidad adaptativa (§C3)', () => {
   it('a 60 fps se mantiene la calidad completa', () => {
-    const { q } = run(new QualityGovernor(false), 60, 4)
-    expect(q).toEqual({ scale: 1, octaves: 6, degraded: false })
+    const { q } = run(new QualityGovernor(), 60, 4)
+    expect(q).toEqual({ scale: 1, degraded: false })
   })
 
-  it('por debajo de 50 fps (media de 2 s) baja a 0,45 y quita una octava', () => {
-    const { q } = run(new QualityGovernor(false), 40, 4)
-    expect(q).toEqual({ scale: 0.45, octaves: 5, degraded: true })
-  })
-
-  it('en móvil parte de 5 octavas y, si degrada, usa 4', () => {
-    expect(new QualityGovernor(true).quality().octaves).toBe(5)
-    const { q } = run(new QualityGovernor(true), 30, 4)
-    expect(q.octaves).toBe(4)
+  it('por debajo de 50 fps (media de 2 s) baja la resolución al 45 %', () => {
+    const { q } = run(new QualityGovernor(), 40, 4)
+    expect(q).toEqual({ scale: 0.45, degraded: true })
   })
 
   it('una vez degradada no vuelve a subir (no alterna calidades mientras se mira)', () => {
-    const gov = new QualityGovernor(false)
+    const gov = new QualityGovernor()
     const { t } = run(gov, 40, 3)
     const { q } = run(gov, 60, 4, t)
     expect(q.degraded).toBe(true)

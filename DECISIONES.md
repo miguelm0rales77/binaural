@@ -264,3 +264,11 @@
   2. Bajar el warp de los presets (cambia el carácter de la imagen).
   3. Aceptar D fuera de rango y documentar que el plan se refiere a otra medida.
 - Hasta que decidas, la prueba de rangos está en `it.skip` con el motivo en el código. El orden de D sí sigue activo.
+
+### Decisiones del usuario sobre el Bloque C (tras la Fase 14)
+- **Fase 14, opción a):** octavas por preset en vez de 6. Cada preset usa el valor más alto que cumple 1,25 ≤ D ≤ 1,55 con su H y su warp (medido a 1024 px): Relajación 2 (D 1,45), Concentración 3 (1,37), Meditación 2 (1,54), Pre-sueño 3 (1,47), Gamma 3 (1,48), Respiración 2 (1,45). Antes, con 6 octavas, la medida era ≈ 1,8. La calidad adaptativa quita una octava sobre las del preset (sin bajar de 1).
+- **Orden de D con 2 octavas:** D(0,4) = 1,486 > D(0,65) = 1,452 > D(0,9) = 1,432. Se cumple, pero el margen es pequeño.
+- **Seguridad visual, criterio del 8 %:** confirmado. El límite del 8 % es para oscilaciones por encima de 0,3 Hz (§C2.1). La modulación de brillo por respiración (±6 %, 0,12 Hz) queda fuera de ese límite y se permite tal como fija el §C3. La prueba mide: cambio entre fotogramas ≤ 2 %, oscilación sin respiración ≤ 8 %, y con respiración ≤ 12 % pico a pico.
+- **Prueba de estrés:** la de seguridad visual usa 6 octavas a propósito (el caso más áspero), aunque los presets usen 2 o 3.
+- **Paleta «Relajación» corregida:** ver la entrada de la Fase 12.
+- **Sin verificar en el navegador tras el cambio de octavas:** el shader no cambió, solo el uniforme `u_octaves`, que ya se probó con 6. Hay que mirar cómo se ve cada preset con 2 o 3 octavas.

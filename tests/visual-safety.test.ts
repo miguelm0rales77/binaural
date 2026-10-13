@@ -28,7 +28,7 @@ function meanLuminance(k: number, v: VisualParams, lungOverride?: number): numbe
     t,
     lung,
     seed: 7,
-    octaves: 6,
+    octaves: v.octaves,
   }
   let sum = 0
   for (let j = 0; j < W; j++) {
@@ -43,7 +43,8 @@ function meanLuminance(k: number, v: VisualParams, lungOverride?: number): numbe
 
 describe('seguridad visual (§C2)', () => {
   // Parámetros extremos: H máximo (campo más áspero), warp máximo, velocidad y brillo al máximo, paleta de contraste.
-  const extreme = sanitizeVisual({ hurst: 0.9, warp: 4, speed: 1, brightness: 1, palette: 'focus', night: false })
+  // Con 6 octavas (el máximo) para que el caso sea el más áspero posible.
+  const extreme = sanitizeVisual({ hurst: 0.9, warp: 4, speed: 1, brightness: 1, palette: 'focus', night: false, octaves: 6 })
 
   it('ningún par de fotogramas consecutivos cambia más de un 2 % en luminancia media (§C2.1)', { timeout: 300_000 }, () => {
     const L: number[] = []
@@ -95,5 +96,7 @@ describe('seguridad visual (§C2)', () => {
       if (p.params.night) expect(s.brightness).toBeLessThanOrEqual(0.35)
     }
     expect(sanitizeVisual({ ...extreme, night: true, brightness: 1 }).brightness).toBe(0.35)
+    expect(sanitizeVisual({ ...extreme, octaves: 9 }).octaves).toBe(6)
+    expect(sanitizeVisual({ ...extreme, octaves: 0 }).octaves).toBe(1)
   })
 })

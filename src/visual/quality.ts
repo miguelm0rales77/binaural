@@ -1,7 +1,7 @@
 /**
  * Control de calidad de la vista fractal (§C3 del plan): si la media de los últimos 2 s baja de 50 fps,
- * la resolución pasa al 45 % y se quita una octava. Es una degradación de un solo sentido: no vuelve a subir,
- * para no alternar entre calidades mientras se mira.
+ * la resolución pasa al 45 % y se quita una octava (sobre las del preset). Es una degradación de un solo sentido:
+ * no vuelve a subir, para no alternar entre calidades mientras se mira.
  */
 
 export const TARGET_FPS = 50
@@ -10,8 +10,7 @@ const WINDOW_MS = 2000
 export interface Quality {
   /** Factor sobre la resolución base (1 = completa). */
   scale: number
-  /** Octavas del fBm: 6 en escritorio, 5 en móvil; una menos si se degrada. */
-  octaves: number
+  /** Si se ha degradado: el renderizador quita una octava sobre las del preset. */
   degraded: boolean
 }
 
@@ -21,11 +20,6 @@ export const baseResolution = (dpr: number) => Math.min(dpr, 1.5) * 0.6
 export class QualityGovernor {
   private readonly frames: number[] = [] // instantes de cada fotograma dentro de la ventana
   private degraded = false
-  private readonly baseOctaves: number
-
-  constructor(mobile: boolean) {
-    this.baseOctaves = mobile ? 5 : 6
-  }
 
   /** Registra un fotograma en el instante `nowMs` y devuelve la calidad actual. */
   onFrame(nowMs: number): Quality {
@@ -40,8 +34,6 @@ export class QualityGovernor {
   }
 
   quality(): Quality {
-    return this.degraded
-      ? { scale: 0.45, octaves: this.baseOctaves - 1, degraded: true }
-      : { scale: 1, octaves: this.baseOctaves, degraded: false }
+    return this.degraded ? { scale: 0.45, degraded: true } : { scale: 1, degraded: false }
   }
 }
