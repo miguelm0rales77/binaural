@@ -111,9 +111,13 @@ una sesión: un cambio de versión no corta el audio.
 
 ## Iconos
 
-El dibujo original está en [`assets/icon-source.png`](assets/icon-source.png). El script genera de él las cuatro
-variantes (esquinas transparentes, maskable de Android al 80 %, iPhone a sangre y 192/512):
+Los iconos se dibujan por código con el estilo lineal de la marca (verde bosque y oro sobre crema, sin neón ni
+degradados). El script genera de una vez las variantes: esquinas transparentes, maskable de Android al 80 %, iPhone
+a sangre y 192/512:
 
 ```bash
-python3 scripts/make-icons.py   # regenera public/icon-*.png y apple-touch-icon.png (requiere Pillow)
+python3 scripts/make-icons.py auriculares   # (por defecto) auriculares con una onda de batido
+python3 scripts/make-icons.py corazon       # alternativa: corazón con una onda
 ```
+
+Requiere Pillow. El icono de la pestaña (`public/favicon.svg`) es un SVG aparte.

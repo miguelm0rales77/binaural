@@ -149,7 +149,7 @@ describe('truenos', () => {
     }
   })
 
-  it('son largos: ~15–21 s de retumbo, separados por 6–50 s, sin solaparse', () => {
+  it('duran ~10–13 s de retumbo, separados por 6–50 s, sin solaparse', () => {
     const t = new Thunder(mulberry32(1), FS, 24)
     const n = 240 * FS
     const events: { start: number; dur: number }[] = []
@@ -165,11 +165,11 @@ describe('truenos', () => {
       }
     }
     console.log(`  ${events.length} truenos en 240 s: ${events.map((e) => `${e.start.toFixed(0)} s (${e.dur.toFixed(0)} s)`).join(', ')}`)
-    expect(events.length).toBeGreaterThanOrEqual(3)
-    expect(events.length).toBeLessThanOrEqual(9)
+    expect(events.length).toBeGreaterThanOrEqual(4)
+    expect(events.length).toBeLessThanOrEqual(12)
     for (const e of events) {
-      expect(e.dur).toBeGreaterThanOrEqual(12)
-      expect(e.dur).toBeLessThanOrEqual(24)
+      expect(e.dur).toBeGreaterThanOrEqual(8)
+      expect(e.dur).toBeLessThanOrEqual(16)
     }
     for (let i = 1; i < events.length; i++) {
       const prev = events[i - 1] as (typeof events)[number]
@@ -179,20 +179,20 @@ describe('truenos', () => {
     }
   })
 
-  it('se oye de verdad mucho tiempo: a los 10 s aún conserva ≥ 20 % de su máximo y hacia los 20 s se extingue', () => {
+  it('se oye unos 8 s y se extingue: a los 6 s conserva ≥ 15 % de su máximo y a los 15 s ya no suena', () => {
     for (const d of [0, 0.5, 1]) {
       const x = thunderSolo(d)
       let top = 0
-      for (let a = 0; a < 6; a += 0.5) top = Math.max(top, rmsBetween(x, a, a + 0.5))
-      const at10 = rmsBetween(x, 10, 10.5)
-      const at20 = rmsBetween(x, 20, 20.5)
-      console.log(`  distancia ${d}: máximo ${top.toFixed(2)} · a los 10 s ${(at10 / top * 100).toFixed(0)} % · a los 20 s ${(at20 / top * 100).toFixed(1)} %`)
-      expect(at10).toBeGreaterThan(0.2 * top)
-      expect(at20).toBeLessThan(0.05 * top)
+      for (let a = 0; a < 5; a += 0.5) top = Math.max(top, rmsBetween(x, a, a + 0.5))
+      const at6 = rmsBetween(x, 6, 6.5)
+      const at15 = rmsBetween(x, 15, 15.5)
+      console.log(`  distancia ${d}: máximo ${top.toFixed(2)} · a los 6 s ${((at6 / top) * 100).toFixed(0)} % · a los 15 s ${((at15 / top) * 100).toFixed(1)} %`)
+      expect(at6).toBeGreaterThan(0.15 * top)
+      expect(at15).toBeLessThan(0.05 * top)
     }
   })
 
-  it('«retumbe»: varias oleadas que suben y bajan, no una caída lisa', () => {
+  it('«retumbe»: 3–4 oleadas que suben y bajan, no una caída lisa', () => {
     for (const d of [0, 0.5, 1]) {
       const x = thunderSolo(d)
       // envolvente suavizada (τ = 0,3 s) y recuento de máximos locales con una prominencia ≥ 8 % del máximo, entre 2 y 16 s
@@ -207,7 +207,7 @@ describe('truenos', () => {
       for (const v of e) top = Math.max(top, v)
       const step = Math.round(0.25 * FS)
       const pts: number[] = []
-      for (let i = Math.round(2 * FS); i < 16 * FS; i += step) pts.push(e[i] as number)
+      for (let i = Math.round(1 * FS); i < 11 * FS; i += step) pts.push(e[i] as number)
       let waves = 0
       for (let i = 1; i < pts.length - 1; i++) {
         const p = pts[i] as number
@@ -218,8 +218,9 @@ describe('truenos', () => {
           if (p - valley > 0.08 * top) waves++
         }
       }
-      console.log(`  distancia ${d}: ${waves} oleadas entre 2 y 16 s`)
+      console.log(`  distancia ${d}: ${waves} oleadas entre 1 y 11 s`)
       expect(waves).toBeGreaterThanOrEqual(2)
+      expect(waves).toBeLessThanOrEqual(6)
     }
   })
 
@@ -229,6 +230,30 @@ describe('truenos', () => {
       const cv = levelVariation(x, 4, 8)
       console.log(`  distancia ${d}: variación del nivel en 4–8 s = ${(cv * 100).toFixed(0)} %`)
       expect(cv).toBeGreaterThan(0.25)
+    }
+  })
+
+  it('el final no es ruido blanco: el trueno se oscurece al extinguirse (el espectro baja y casi no queda agudo)', () => {
+    for (const d of [0, 0.5, 1]) {
+      const x = thunderSolo(d)
+      const N = 16384
+      const centroid = (t: number) => {
+        const p = powerSpectrum(x, Math.round(t * FS), N)
+        let num = 0
+        let den = 0
+        for (let k = 1; k < p.length; k++) {
+          num += ((k * FS) / N) * (p[k] as number)
+          den += p[k] as number
+        }
+        return num / den
+      }
+      const highShare = (t: number) => bandEnergy(x, t, 800, 8000, N) / bandEnergy(x, t, 20, 8000, N)
+      const early = centroid(1.5)
+      const tail = centroid(8)
+      console.log(`  distancia ${d}: centroide espectral ${early.toFixed(0)} Hz a 1,5 s → ${tail.toFixed(0)} Hz a 8 s · agudos (>800 Hz) en la cola: ${(highShare(8) * 100).toFixed(1)} %`)
+      expect(tail).toBeLessThan(0.6 * early) // se oscurece claramente
+      expect(tail).toBeLessThan(250) // la cola es un rumor grave
+      expect(highShare(8)).toBeLessThan(0.05) // y casi no queda agudo (lo que sonaba a ruido blanco)
     }
   })
 

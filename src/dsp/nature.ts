@@ -209,13 +209,13 @@ export class RiverGen implements NatureGen {
   }
 }
 
-const ROLLS = 8
+const ROLLS = 4
 /** Ganancias de las capas del trueno (calibradas con las medidas de los tests). */
-const THUNDER_LOW = 8
-const THUNDER_BODY = 3.4
-const THUNDER_MID = 1.7
-const THUNDER_CRACK = 0.8
-const THUNDER_SHEET = 0.6
+const THUNDER_LOW = 10.5
+const THUNDER_BODY = 4.4
+const THUNDER_MID = 2.2
+const THUNDER_CRACK = 1.05
+const THUNDER_SHEET = 0.77
 
 export interface ThunderOptions {
   /** Segundos hasta el primer trueno (por defecto 5–12 s al azar). */
@@ -225,8 +225,10 @@ export interface ThunderOptions {
 }
 
 /**
- * Trueno largo con «retumbe», como el de una hoja de latón que se ondea (thunder sheet): dura ~14–22 s,
- * con varias oleadas que crecen y bajan y un temblor rápido e irregular de amplitud. Capas:
+ * Trueno con «retumbe», como el de una hoja de latón que se ondea (thunder sheet): dura ~9–11 s, con 4
+ * oleadas que suben y bajan y un temblor rápido e irregular de amplitud. Se **oscurece** al apagarse (los
+ * agudos mueren primero y queda un rumor grave), como un trueno real: sin ese filtro, la cola de las capas de
+ * ruido sonaba a siseo de ruido blanco. Capas:
  *  - subgrave (< ~150 Hz) para auriculares, con las oleadas;
  *  - cuerpo del retumbo (70–300 Hz) con temblor de ~6 Hz, lo que le da el «ondeo»;
  *  - retumbo medio (200–1000 Hz) para altavoces pequeños, también con temblor;
@@ -245,6 +247,9 @@ export class Thunder {
   private readonly crackBp: BandPass
   private readonly sheetLo: BandPass
   private readonly sheetHi: BandPass
+  private dark1 = 0 // dos polos de oscurecimiento (12 dB/oct) para la cola
+  private dark2 = 0
+  private darkCoef = 0
   private readonly wobble: SlowRandom // temblor lento-medio (~6 Hz)
   private readonly flutter: SlowRandom // aleteo rápido (~14 Hz)
   private readonly rollT = new Float64Array(ROLLS)
@@ -260,6 +265,7 @@ export class Thunder {
   private crackAmp = 0
   private crack2At = 0 // s
   private crack2Amp = 0
+  private endAt = 0 // s: instante en que el trueno se da por terminado
   private active = false
   private wait: number
   private readonly rand: Rand
@@ -294,7 +300,9 @@ export class Thunder {
     this.active = true
     this.t = 0
     this.attack = 0.05 + 0.6 * dist
-    this.tauLow = 4.5 + 1.5 * this.rand() // caída lenta: el retumbo se oye 10–15 s y se extingue hacia los 20 s
+    this.tauLow = 2.0 + 0.6 * this.rand() // la caída de fondo es rápida: las oleadas son lo que mantiene el retumbo
+    this.dark1 = 0
+    this.dark2 = 0
     this.tauMid = 0.7 * this.tauLow
     this.tauSheet = 0.4 * this.tauLow
     this.amp = 0.65 + 0.35 * this.rand()
@@ -304,13 +312,16 @@ export class Thunder {
     this.crack2Amp = 0.45 * this.crackAmp
     // oleadas irregulares repartidas por todo el retumbo (más separadas y más anchas al avanzar). Su fuerza crece
     // con el tiempo para compensar la caída de la envolvente: así las oleadas tardías se oyen y el retumbo «rueda».
-    let at = this.attack + 0.5
+    // Las oleadas se SUMAN a la caída de fondo (no la multiplican): así cada una sube y baja de verdad, con valles
+    // entre ellas. Cada una es algo más débil que la anterior.
+    let at = this.attack + 0.9
     for (let j = 0; j < ROLLS; j++) {
-      at += 0.7 + 1.8 * this.rand() + 0.12 * j
+      at += 1.2 + 0.8 * this.rand()
       this.rollT[j] = at
-      this.rollA[j] = (0.6 + 0.9 * this.rand()) * Math.exp((0.55 * (at - this.attack)) / this.tauLow)
-      this.rollW[j] = 0.35 + 0.5 * this.rand() + 0.05 * j
+      this.rollA[j] = (0.55 + 0.35 * this.rand()) * (1 - 0.12 * j)
+      this.rollW[j] = 0.45 + 0.3 * this.rand()
     }
+    this.endAt = Math.max(this.attack + 3.5 * this.tauLow, (this.rollT[ROLLS - 1] as number) + 3 * (this.rollW[ROLLS - 1] as number))
   }
 
   tick(): number {
@@ -322,14 +333,14 @@ export class Thunder {
     const atk = this.attack
     // cuerpo del retumbo: subida en coseno alzado y decaimiento exponencial, modulado por las oleadas
     const baseLow = ts < atk ? 0.5 - 0.5 * Math.cos((Math.PI * ts) / atk) : Math.exp(-(ts - atk) / this.tauLow)
-    if (ts > atk && baseLow < 3e-2) {
+    if (ts > this.endAt) {
       this.active = false
       this.wait = Math.min(50, Math.max(6, -Math.log(1 - this.rand()) * this.meanWaitSec)) * this.fs
       return 0
     }
     const baseMid = ts < atk ? baseLow : Math.exp(-(ts - atk) / this.tauMid)
     const baseSheet = ts < atk ? baseLow : Math.exp(-(ts - atk) / this.tauSheet)
-    let rolls = 1
+    let rolls = 0
     for (let j = 0; j < ROLLS; j++) {
       const d = (ts - (this.rollT[j] as number)) / (this.rollW[j] as number)
       rolls += (this.rollA[j] as number) * Math.exp(-0.5 * d * d)
@@ -350,14 +361,18 @@ export class Thunder {
     const mid = this.midLp.tick(this.midHp.tick(n))
     const cr = this.crackBp.tick(n, 1400, 0.6)
     const sheet = this.sheetLo.tick(n, 700, 1.2) + 0.7 * this.sheetHi.tick(n, 1700, 1.5)
-    return (
-      this.amp *
-      (THUNDER_LOW * low * baseLow * rolls +
-        THUNDER_BODY * body * baseMid * rolls * wob +
-        THUNDER_MID * this.midGain * mid * baseMid * rolls * wob +
-        THUNDER_SHEET * sheet * baseSheet * rolls * flu * wob +
-        THUNDER_CRACK * cr * crack)
-    )
+    // oscurecimiento: el corte del filtro baja de ~1,6 kHz a ~120 Hz según el trueno se extingue
+    if ((this.t & 31) === 0) {
+      const fc = 120 + 1500 * Math.exp(-ts / (0.5 * this.tauLow))
+      this.darkCoef = 1 - Math.exp((-TWO_PI * fc) / this.fs)
+    }
+    const textured =
+      THUNDER_BODY * body * (baseMid + 0.9 * rolls) * wob +
+      THUNDER_MID * this.midGain * mid * (baseMid + 0.9 * rolls) * wob +
+      THUNDER_SHEET * sheet * (baseSheet + 0.5 * rolls) * flu * wob
+    this.dark1 += this.darkCoef * (textured - this.dark1)
+    this.dark2 += this.darkCoef * (this.dark1 - this.dark2)
+    return this.amp * (THUNDER_LOW * low * (baseLow + rolls) + this.dark2 + THUNDER_CRACK * cr * crack)
   }
 }
 
