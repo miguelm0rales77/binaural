@@ -1,3 +1,5 @@
+import { RESONANCE_PATTERN, type BreathPattern } from './breath'
+
 export type BeatMode = 'binaural' | 'monaural' | 'isochronic'
 export type NoiseType = 'none' | 'white' | 'pink' | 'brown' | NatureType
 /** Sonidos de la naturaleza sintetizados (sin grabaciones). */
@@ -13,6 +15,22 @@ export interface EngineParams {
   noiseGain: number // 0–1
   loudnessComp: boolean // compensación ISO 226 activada/desactivada
   masterGain: number // 0–1, con techo duro (ver §5 del plan)
+  breath: BreathConfig
+}
+
+/** Señales de guía del metrónomo de respiración; cada una se activa por separado. */
+export interface BreathCues {
+  swell: boolean // el ruido de fondo «respira» (ganancia y, en rosa/marrón, filtro)
+  guideTone: boolean // seno que sube de 220 a 330 Hz al inspirar
+  chime: boolean // campanilla al empezar cada fase
+}
+
+export interface BreathConfig {
+  enabled: boolean
+  pattern: BreathPattern
+  cues: BreathCues
+  /** Duración de las señales desde que empieza el reloj; al cumplirse, fundido de 30 s. null = sin límite. */
+  maxSec: number | null
 }
 
 export interface ProgramStep {
@@ -47,4 +65,10 @@ export const DEFAULT_PARAMS: EngineParams = {
   noiseGain: 0.3,
   loudnessComp: true,
   masterGain: 0.3,
+  breath: {
+    enabled: false,
+    pattern: { ...RESONANCE_PATTERN },
+    cues: { swell: true, guideTone: false, chime: true },
+    maxSec: null,
+  },
 }

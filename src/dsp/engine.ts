@@ -1,3 +1,4 @@
+import { breathStateInto, type BreathPattern, type BreathState } from './breath'
 import { IsoEnvelope } from './envelope'
 import { loudnessCompGain } from './loudness'
 import { ForestGen, RainGen, RiverGen, StormGen, WindGen, type NatureGen } from './nature'
@@ -14,6 +15,23 @@ const CONTROL_BLOCK = 128
 const TAU_GAIN = 0.05 // s
 const TAU_USER_FREQ = 2 // s, cambios de beat/portadora hechos por el usuario
 const TAU_PROGRAM_FREQ = 0.25 // s, el programa ya interpola; solo evita saltos al empezar
+
+// Señales del metrónomo de respiración (Bloque B)
+const TAU_BREATH_LUNG = 0.05 // s, suaviza el pulmón usado por las señales (evita saltos al cambiar el patrón)
+const TAU_CUE_FLAG = 0.05 // s, activación de cada señal
+const BREATH_FADE_USER_SEC = 0.5 // s, al activar o desactivar el metrónomo
+const BREATH_FADE_TIMED_SEC = 30 // s, fundido al cumplirse maxSec
+const GUIDE_GAIN = 0.126 // −18 dB respecto al tono
+const GUIDE_F_LO = 220
+const GUIDE_F_HI = 330
+const CHIME_AMP = 0.2
+const CHIME_TAU = 1.2 / Math.log(1000) // s; la nota cae 60 dB en 1,2 s
+const CHIME_MAX_AGE = 3 // s, a partir de aquí la campanilla ya no suena
+const CHIME_HI = 660 // inspiración
+const CHIME_LO = 440 // espiración
+const SWELL_NONE_GAIN = 0.4 // el oleaje sin ruido usa rosa a este nivel relativo
+const SWELL_LP_LO = 400 // Hz, pulmones vacíos
+const SWELL_LP_HI = 2500 // Hz, pulmones llenos
 
 export interface EngineOptions {
   /** Fuente de aleatoriedad (inyectable para tests deterministas). */
@@ -33,11 +51,27 @@ export interface EngineState {
   remainingSec: number | null
   beatHz: number
   carrierHz: number
+  /** Instante del reloj de la sesión (s desde el inicio) en el que la respiración vale fase 0. */
+  breathOriginSec: number
 }
 
 type RunState = 'idle' | 'running' | 'stopping'
 
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x))
+
+function samePattern(a: BreathPattern, b: BreathPattern): boolean {
+  return (
+    a.rpm === b.rpm &&
+    a.inhaleRatio === b.inhaleRatio &&
+    a.holdInSec === b.holdInSec &&
+    a.holdOutSec === b.holdOutSec &&
+    a.rampFromRpm === b.rampFromRpm &&
+    a.rampSec === b.rampSec
+  )
+}
+
+const phaseIndex = (ph: BreathState['phase']): number =>
+  ph === 'in' ? 0 : ph === 'holdIn' ? 1 : ph === 'out' ? 2 : 3
 
 /**
  * Núcleo DSP único: lo usan el worklet (tiempo real), la exportación WAV y los tests.
@@ -79,12 +113,37 @@ export class DspEngine {
   /** Pesos y generadores de los sonidos de la naturaleza, en el orden de NATURE_TYPES. */
   private readonly wNature: Smoother[]
   private readonly nature: NatureGen[]
+  private readonly wNone: Smoother
 
   private readonly oscA = new Oscillator()
   private readonly oscB = new Oscillator()
   private readonly oscC = new Oscillator()
   private readonly iso = new IsoEnvelope()
   private readonly noise: NoiseGenerator
+
+  // Metrónomo de respiración
+  private readonly bs: BreathState = { phase: 'in', phaseProgress: 0, lung: 0, cycleIndex: 0 }
+  private breathOrigin = 0 // s del reloj de la sesión donde empieza la fase 0
+  private breathTarget = 0 // 1 = señales activas, 0 = apagadas o caducadas
+  private breathLevel = 0 // fundido de las señales, 0–1
+  private breathExpired = false
+  private readonly breathStepUser: number
+  private readonly breathStepTimed: number
+  private readonly lungS: Smoother
+  private readonly swellFlag: Smoother
+  private readonly guideFlag: Smoother
+  private readonly guideOsc = new Oscillator()
+  private readonly chimeA = new Oscillator()
+  private readonly chimeB = new Oscillator()
+  private chimeAge = Infinity
+  private chimeF = CHIME_HI
+  private lastBreathKey = -1
+  private swellLp = 0
+  // Salidas de `breathSample` para la muestra en curso (sin reservar memoria)
+  private cueLung = 0
+  private cueSwell = 0
+  private cueGuide = 0
+  private cueChime = 0
 
   readonly fs: number
 
@@ -106,6 +165,12 @@ export class DspEngine {
       new ForestGen(rand, fs),
     ]
     this.wNature = NATURE_TYPES.map(() => new Smoother(0, TAU_GAIN, fs))
+    this.wNone = new Smoother(0, TAU_GAIN, fs)
+    this.breathStepUser = this.invFs / BREATH_FADE_USER_SEC
+    this.breathStepTimed = this.invFs / BREATH_FADE_TIMED_SEC
+    this.lungS = new Smoother(0, TAU_BREATH_LUNG, fs)
+    this.swellFlag = new Smoother(0, TAU_CUE_FLAG, fs)
+    this.guideFlag = new Smoother(0, TAU_CUE_FLAG, fs)
 
     const p = this.params
     this.carrier = new Smoother(p.carrierHz, TAU_USER_FREQ, fs)
@@ -126,7 +191,7 @@ export class DspEngine {
   }
 
   private allWeights(): Smoother[] {
-    return [this.wBin, this.wMon, this.wIso, this.wWhite, this.wPink, this.wBrown, ...this.wNature]
+    return [this.wBin, this.wMon, this.wIso, this.wWhite, this.wPink, this.wBrown, this.wNone, ...this.wNature]
   }
 
   /** Modo y tipo de ruido: pesos one-hot que se suavizan para cambiar sin clics. */
@@ -139,7 +204,10 @@ export class DspEngine {
     this.wWhite.target = n === 'white' ? 1 : 0
     this.wPink.target = n === 'pink' ? 1 : 0
     this.wBrown.target = n === 'brown' ? 1 : 0
+    this.wNone.target = n === 'none' ? 1 : 0
     NATURE_TYPES.forEach((t, i) => ((this.wNature[i] as Smoother).target = n === t ? 1 : 0))
+    this.swellFlag.target = this.params.breath.cues.swell ? 1 : 0
+    this.guideFlag.target = this.params.breath.cues.guideTone ? 1 : 0
   }
 
   private setFreqTau(tau: number): void {
@@ -152,8 +220,16 @@ export class DspEngine {
    * mientras corre un programa, el programa se cancela.
    */
   setParams(patch: Partial<EngineParams>): void {
+    const prevBreath = this.params.breath
     this.params = sanitizeParams(this.params, patch, this.masterCeiling)
     const p = this.params
+    // Al activar el metrónomo o cambiar su patrón mientras suena, el reloj empieza de nuevo desde fase 0.
+    if (
+      this.runState !== 'idle' &&
+      ((p.breath.enabled && !prevBreath.enabled) || !samePattern(prevBreath.pattern, p.breath.pattern))
+    ) {
+      this.breathOrigin = this.elapsed
+    }
     if (this.program && (patch.beatHz !== undefined || patch.carrierHz !== undefined)) {
       this.program = null
       this.setFreqTau(TAU_USER_FREQ)
@@ -200,6 +276,11 @@ export class DspEngine {
       this.elapsed = 0
       this.programOrigin = 0
       this.sessionDeadline = this.sessionLen
+      this.breathOrigin = 0
+      this.breathExpired = false
+      this.lastBreathKey = -1
+      this.chimeAge = Infinity
+      this.swellLp = 0
       this.snapSmoothers()
     }
     this.runState = 'running'
@@ -218,6 +299,11 @@ export class DspEngine {
     this.masterGain.snap(p.masterGain)
     this.comp.snap(p.loudnessComp ? loudnessCompGain(this.carrier.value) : 1)
     for (const w of this.allWeights()) w.snap(w.target)
+    this.breathTarget = p.breath.enabled ? 1 : 0
+    this.breathLevel = this.breathTarget
+    this.lungS.snap(0)
+    this.swellFlag.snap(p.breath.cues.swell ? 1 : 0)
+    this.guideFlag.snap(p.breath.cues.guideTone ? 1 : 0)
   }
 
   stop(): void {
@@ -240,6 +326,7 @@ export class DspEngine {
       remainingSec: remaining === null ? null : Math.max(0, remaining),
       beatHz: this.beat.value,
       carrierHz: this.carrier.value,
+      breathOriginSec: this.breathOrigin,
     }
   }
 
@@ -270,6 +357,52 @@ export class DspEngine {
     }
     // Compensación de sonoridad: se recalcula por bloque con la portadora actual.
     this.comp.target = this.params.loudnessComp ? loudnessCompGain(this.carrier.value) : 1
+    const br = this.params.breath
+    this.breathExpired = br.maxSec !== null && this.elapsed - this.breathOrigin >= br.maxSec
+    this.breathTarget = br.enabled && !this.breathExpired ? 1 : 0
+  }
+
+  /**
+   * Metrónomo de respiración para la muestra de instante `t` (reloj de la sesión). Calcula el pulmón
+   * (suavizado), el fundido de las señales y las señales en sí: oleaje (ganancia del ruido), tono guía y
+   * campanilla. Las campanillas se disparan en cada cambio de fase, con precisión de muestra.
+   */
+  private breathSample(t: number): void {
+    const br = this.params.breath
+    breathStateInto(this.bs, t - this.breathOrigin, br.pattern)
+    this.lungS.target = this.bs.lung
+    const lung = this.lungS.next()
+    this.cueLung = lung
+
+    const dir = this.breathTarget - this.breathLevel
+    const step = this.breathExpired ? this.breathStepTimed : this.breathStepUser
+    this.breathLevel += dir > 0 ? Math.min(dir, step) : Math.max(dir, -step)
+    const level = this.breathLevel
+
+    const key = this.bs.cycleIndex * 4 + phaseIndex(this.bs.phase)
+    if (key !== this.lastBreathKey) {
+      this.lastBreathKey = key
+      if (this.breathTarget === 1 && br.cues.chime) {
+        this.chimeAge = 0
+        this.chimeF = this.bs.phase === 'in' || this.bs.phase === 'holdIn' ? CHIME_HI : CHIME_LO
+        this.chimeA.phase = 0
+        this.chimeB.phase = 0
+      }
+    }
+    let chime = 0
+    if (this.chimeAge < CHIME_MAX_AGE) {
+      this.chimeAge += this.invFs
+      const env = Math.exp(-this.chimeAge / CHIME_TAU) * Math.min(1, this.chimeAge / 0.005)
+      const x = this.chimeA.tick(TWO_PI * this.chimeF * this.invFs)
+      const y = this.chimeB.tick(TWO_PI * 2 * this.chimeF * this.invFs)
+      chime = (x + 0.3 * y) * env * CHIME_AMP
+    }
+    this.cueChime = chime * this.toneGain.value
+
+    const guideOn = this.guideFlag.next() * level
+    const guide = this.guideOsc.tick(TWO_PI * (GUIDE_F_LO + (GUIDE_F_HI - GUIDE_F_LO) * lung) * this.invFs)
+    this.cueGuide = guide * guideOn * GUIDE_GAIN
+    this.cueSwell = this.swellFlag.next() * level
   }
 
   private renderChunk(outL: Float32Array, outR: Float32Array, start: number, m: number): void {
@@ -305,18 +438,32 @@ export class DspEngine {
       const mono = 0.5 * (a + b)
       const isoSig = c * env
       const toneG = this.toneGain.next() * this.comp.next()
-      const toneL = (wb * a + wm * mono + wi * isoSig) * toneG
-      const toneR = (wb * b + wm * mono + wi * isoSig) * toneG
+      this.breathSample(this.elapsed + (i - start) * this.invFs)
+      const toneL = (wb * a + wm * mono + wi * isoSig) * toneG + this.cueGuide * toneG + this.cueChime
+      const toneR = (wb * b + wm * mono + wi * isoSig) * toneG + this.cueGuide * toneG + this.cueChime
 
       this.noise.next()
-      let bg =
-        this.wWhite.next() * this.noise.white +
-        this.wPink.next() * this.noise.pink +
-        this.wBrown.next() * this.noise.brown
+      const sg = this.cueSwell
+      const lung = this.cueLung
+      const g = 0.6 + 0.4 * lung // el oleaje sube de ×0.6 a ×1.0
+      const wP = this.wPink.next()
+      const wB = this.wBrown.next()
+      const wW = this.wWhite.next()
+      const wN = this.wNone.next()
+      let natureSum = 0
       for (let k = 0; k < 5; k++) {
         const w = (this.wNature[k] as Smoother).next()
-        if (w > 1e-4) bg += w * (this.nature[k] as NatureGen).next()
+        if (w > 1e-4) natureSum += w * (this.nature[k] as NatureGen).next()
       }
+      // Ruido del usuario: blanco y naturaleza solo cambian de ganancia con el oleaje; rosa y marrón
+      // además pasan por un paso bajo que se abre con el pulmón. Sin oleaje, la suma es la de siempre.
+      const direct = wW * this.noise.white + natureSum
+      const lpIn = wP * this.noise.pink + wB * this.noise.brown
+      const swellIn = lpIn + wN * SWELL_NONE_GAIN * this.noise.pink // sin ruido elegido: rosa solo para el oleaje
+      const lpHz = SWELL_LP_LO + (SWELL_LP_HI - SWELL_LP_LO) * lung
+      this.swellLp += (1 - Math.exp(-TWO_PI * lpHz * this.invFs)) * (swellIn - this.swellLp)
+      const bg =
+        direct * (1 - sg + sg * g) + lpIn * (1 - sg) + sg * g * this.swellLp
       const nz = bg * this.noiseGain.next()
 
       const scale = 0.5 * this.fade * this.masterGain.next()

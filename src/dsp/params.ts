@@ -1,4 +1,12 @@
-import { DEFAULT_PARAMS, type BeatMode, type EngineParams, type NatureType, type NoiseType } from './types'
+import { sanitizePattern } from './breath'
+import {
+  DEFAULT_PARAMS,
+  type BeatMode,
+  type BreathConfig,
+  type EngineParams,
+  type NatureType,
+  type NoiseType,
+} from './types'
 
 export const MODES: readonly BeatMode[] = ['binaural', 'monaural', 'isochronic']
 export const NATURE_TYPES: readonly NatureType[] = ['rain', 'wind', 'storm', 'river', 'forest']
@@ -25,6 +33,25 @@ function num(v: unknown, fallback: number, key: NumericKey, max: number = RANGES
   return Math.max(RANGES[key].min, Math.min(max, x))
 }
 
+function sanitizeBreath(base: BreathConfig, v: unknown): BreathConfig {
+  const o = (v && typeof v === 'object' ? v : {}) as Partial<BreathConfig>
+  const pattern = o.pattern && typeof o.pattern === 'object' ? { ...base.pattern, ...o.pattern } : base.pattern
+  const cues = o.cues && typeof o.cues === 'object' ? { ...base.cues, ...o.cues } : base.cues
+  let maxSec = base.maxSec
+  if (o.maxSec === null) maxSec = null
+  else if (typeof o.maxSec === 'number' && Number.isFinite(o.maxSec)) maxSec = Math.max(0, Math.min(86400, o.maxSec))
+  return {
+    enabled: typeof o.enabled === 'boolean' ? o.enabled : base.enabled,
+    pattern: sanitizePattern(pattern),
+    cues: {
+      swell: typeof cues.swell === 'boolean' ? cues.swell : base.cues.swell,
+      guideTone: typeof cues.guideTone === 'boolean' ? cues.guideTone : base.cues.guideTone,
+      chime: typeof cues.chime === 'boolean' ? cues.chime : base.cues.chime,
+    },
+    maxSec,
+  }
+}
+
 /**
  * Aplica `patch` sobre `base` recortando rangos y descartando valores inválidos (NaN, tipos erróneos).
  * `masterCeiling` es el techo del volumen general (por defecto MASTER_CEILING = 0,8).
@@ -45,6 +72,7 @@ export function sanitizeParams(
     toneGain: num(p.toneGain, base.toneGain, 'toneGain'),
     noiseGain: num(p.noiseGain, base.noiseGain, 'noiseGain'),
     masterGain: num(p.masterGain, base.masterGain, 'masterGain', masterCeiling),
+    breath: sanitizeBreath(base.breath, p.breath),
   }
 }
 
