@@ -163,7 +163,7 @@ Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
 - **Aviso de fotosensibilidad:** se muestra la primera vez que se abre la vista (`binaural:visual-warning:v1`).
 - **Pendiente manual:** el parpadeo visual sobre un dispositivo real y el comportamiento con la respiración real (no se mide en la prueba con reloj simulado).
 
-## Bloque C — Fase 14: validación de la dimensión fractal (BLOQUEADA, decisión pendiente)
+## Bloque C — Fase 14: validación de la dimensión fractal (resuelta: 3 octavas)
 Medido con box-counting sobre campos de 1024×1024 (umbral en la mediana, contorno con vecindad 4, ε = 2…256, mínimo de 4 desplazamientos). Método sin cambios respecto al plan.
 
 | Configuración | D |
@@ -188,3 +188,26 @@ Medido con box-counting sobre campos de 1024×1024 (umbral en la mediana, contor
 3. Otra combinación de octavas y deformación, que hay que medir.
 
 La prueba del rango por preset se ha quitado de `tests/boxcount.test.ts` para no dejarla en rojo; queda la de monotonía (D(0,40) > D(0,65) > D(0,90)), que pasa.
+
+### Decisión: 3 octavas (resuelve la Fase 14)
+Elegida por el usuario. Cambios:
+- **Octavas:** 3 en escritorio, móvil y en el valor por defecto del shader. Antes eran 6 y 5. La calidad reducida ya no baja las octavas (solo la escala), para que la medida de dimensión siga siendo válida.
+- **Meditación (theta):** warp de 3,0 a 2,0. Con 3 octavas y warp 3,0, D = 1,61; con warp 2,0, D = 1,44.
+- **Brillo del aliento:** de ±3 % a ±2 % (oscilación total 4 %). Con 3 octavas, la oscilación total de la prueba de destellos subió a 8,24 %, por encima del 8 % del plan. Con ±2 % queda por debajo. Shader y CPU cambiados a la vez.
+
+Dimensión fractal medida con 3 octavas (box-counting, H y deformación de la tabla C4):
+
+| Preset | H | Deformación | D |
+|---|---|---|---|
+| Relajación (alfa) | 0,65 | 2,5 | 1,52 |
+| Concentración (beta) | 0,70 | 1,5 | 1,31 |
+| Meditación (theta) | 0,60 | 2,0 | 1,44 |
+| Pre-sueño | 0,70 | 2,0 | 1,41 |
+| Gamma 40 Hz | 0,65 | 2,0 | 1,42 |
+| Respiración (sin audio) | 0,65 | 2,5 | 1,52 |
+
+Todos dentro de 1,25–1,55. La prueba `tests/boxcount.test.ts` lo comprueba, y también la monotonía D(0,40) > D(0,65) > D(0,90).
+
+**Consecuencias:**
+- Las imágenes y los GIF generados antes (6 octavas, Meditación con warp 3,0, brillo ±3 %) ya no coinciden con la app. Si se quiere ver cómo queda ahora, hay que volver a generarlos.
+- Hay menos detalle fino y el campo se ve más continuo. Es el coste de cumplir el rango del plan; no se ha medido en un dispositivo real.

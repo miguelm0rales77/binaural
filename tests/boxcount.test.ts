@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { fieldValue } from '../src/visual/cpuField'
 import { contourMask, fractalDimension } from '../src/visual/boxCount'
-import { sanitizeVisual, type VisualSettings } from '../src/visual/fractalParams'
+import { VISUAL_PRESETS, sanitizeVisual, type VisualSettings } from '../src/visual/fractalParams'
 
 const N = 1024
-const OCTAVES = 6
+const OCTAVES = 3
 
 /** Dimensión de un campo 1024×1024 (fotograma fijo, sin respiración). Cacheada: cada campo cuesta unos segundos. */
 const cache = new Map<string, number>()
@@ -31,6 +31,14 @@ const base = (over: Partial<VisualSettings>): VisualSettings =>
   })
 
 describe('dimensión fractal del campo (box-counting)', () => {
+  it('cada preset de la tabla C4 da 1,25 ≤ D ≤ 1,55 (3 octavas)', { timeout: 900_000 }, () => {
+    for (const p of VISUAL_PRESETS) {
+      const d = dimension(p.id, base({ hurst: p.hurst, warp: p.warp, speed: p.speed }))
+      expect(d, `D de «${p.name}» (H ${p.hurst}, deformación ${p.warp})`).toBeGreaterThanOrEqual(1.25)
+      expect(d, `D de «${p.name}» (H ${p.hurst}, deformación ${p.warp})`).toBeLessThanOrEqual(1.55)
+    }
+  })
+
   it('la dimensión baja al subir H: D(0,40) > D(0,65) > D(0,90)', { timeout: 900_000 }, () => {
     const d40 = dimension('H0.40', base({ hurst: 0.4 }))
     const d65 = dimension('H0.65', base({ hurst: 0.65 }))

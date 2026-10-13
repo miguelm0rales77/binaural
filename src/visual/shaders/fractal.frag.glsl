@@ -5,7 +5,7 @@ precision highp int;
 // Fractal estadístico (fBm con domain warping). Sin destellos: nada pulsa al ritmo del audio.
 // OCTAVES se define desde JS (6 en escritorio, 5 en móvil o en modo de calidad reducida).
 #ifndef OCTAVES
-#define OCTAVES 6
+#define OCTAVES 3
 #endif
 
 out vec4 fragColor;
@@ -76,7 +76,7 @@ void main() {
 
   float t = 0.5 + 0.9 * v + 0.25 * (length(q) - 0.5) + 0.15 * r.x;
   vec3 col = u_pal[0] + u_pal[1] * cos(6.28318 * (u_pal[2] * t + u_pal[3]));
-  // Brillo: el aliento lo modula ±3 % (oscilación total 6 %, dentro del límite del 8 % del plan)
-  float bright = u_brightness * (1.0 + 0.06 * breath);
+  // Brillo: el aliento lo modula ±2 % (oscilación total 4 %; con 3 octavas, el total de la prueba de destellos queda bajo el 8 %)
+  float bright = u_brightness * (1.0 + 0.04 * breath);
   fragColor = vec4(clamp(col * bright, 0.0, 1.0), 1.0);
 }

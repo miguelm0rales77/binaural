@@ -21,8 +21,9 @@ export interface FrameState {
 /** Resolución interna: min(devicePixelRatio, 1,5) × 0,6 (alta calidad) o × 0,45 (calidad reducida). */
 export const RENDER_SCALE = 0.6
 export const LOW_RENDER_SCALE = 0.45
-export const OCTAVES_DESKTOP = 6
-export const OCTAVES_MOBILE = 5
+// 3 octavas en todas partes: es la configuración con la que se midió la dimensión fractal (ver DECISIONES.md, Fase 14)
+export const OCTAVES_DESKTOP = 3
+export const OCTAVES_MOBILE = 3
 
 export class FractalRenderer {
   private readonly gl: WebGL2RenderingContext
@@ -100,11 +101,10 @@ export class FractalRenderer {
     }
   }
 
-  /** Calidad reducida (móviles o fotogramas lentos): escala menor y una octava menos. */
+  /** Calidad reducida (fotogramas lentos): escala menor. No se bajan las octavas: la medida de dimensión es con 3. */
   setQuality(q: 'high' | 'low'): void {
     if (q === this.quality) return
     this.quality = q
-    this.octaves = q === 'low' ? Math.max(3, OCTAVES_MOBILE - 1) : this.octaves
     this.build()
     this.resize(this.cssW, this.cssH, this.dpr)
   }

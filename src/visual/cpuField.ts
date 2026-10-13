@@ -100,7 +100,7 @@ export function pixelColor(x: number, y: number, w: number, h: number, s: Visual
   const v = fbm(px + warp * rx, py + warp * ry, gain, octaves, seed)
 
   const tp = 0.5 + 0.9 * v + 0.25 * (Math.hypot(qx, qy) - 0.5) + 0.15 * rx
-  const bright = s.brightness * (1 + 0.06 * breath)
+  const bright = s.brightness * (1 + 0.04 * breath)
   const pal = s.palette
   const ch = (k: 0 | 1 | 2) => {
     const c = pal.a[k] + pal.b[k] * Math.cos(2 * Math.PI * (pal.c[k] * tp + pal.d[k]))

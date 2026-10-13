@@ -6,7 +6,7 @@ import { meanLuminance, type CpuFrame } from '../src/visual/cpuField'
 const W = 64
 const FPS = 30
 const SECONDS = 20
-const OCTAVES = 6
+const OCTAVES = 3
 
 const base: VisualSettings = {
   hurst: 0.4, // el más áspero: más detalle y más cambio por píxel

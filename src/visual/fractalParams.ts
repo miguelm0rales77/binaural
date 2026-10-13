@@ -48,7 +48,7 @@ const TEAL: Palette = { a: [0.3, 0.5, 0.5], b: [0.25, 0.3, 0.3], c: [1, 1, 1], d
 export const VISUAL_PRESETS: readonly VisualPreset[] = [
   { id: 'relax-alpha', name: 'Relajación (alfa)', palette: SOFT, hurst: 0.65, warp: 2.5, speed: 1.0 },
   { id: 'focus-beta', name: 'Concentración (beta)', palette: NEUTRAL, hurst: 0.7, warp: 1.5, speed: 0.6 },
-  { id: 'meditation-theta', name: 'Meditación (theta)', palette: DEEP, hurst: 0.6, warp: 3.0, speed: 0.8 },
+  { id: 'meditation-theta', name: 'Meditación (theta)', palette: DEEP, hurst: 0.6, warp: 2.0, speed: 0.8 },
   { id: 'pre-sleep', name: 'Pre-sueño', palette: AMBER, hurst: 0.7, warp: 2.0, speed: 0.4, night: true },
   { id: 'gamma-40', name: 'Reflexión (gamma)', palette: NEUTRAL, hurst: 0.65, warp: 2.0, speed: 0.6 },
   { id: 'breath-only', name: 'Respiración (sin audio)', palette: TEAL, hurst: 0.65, warp: 2.5, speed: 0.7 },
