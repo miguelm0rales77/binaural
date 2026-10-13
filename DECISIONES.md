@@ -162,3 +162,29 @@ Fases 8–10 completas en verde: 176 tests, lint, typecheck y build.
 - **Movimiento reducido:** `motionScale` (×0,1) lo usa el componente. Probado como función.
 - **Aviso de fotosensibilidad:** se muestra la primera vez que se abre la vista (`binaural:visual-warning:v1`).
 - **Pendiente manual:** el parpadeo visual sobre un dispositivo real y el comportamiento con la respiración real (no se mide en la prueba con reloj simulado).
+
+## Bloque C — Fase 14: validación de la dimensión fractal (BLOQUEADA, decisión pendiente)
+Medido con box-counting sobre campos de 1024×1024 (umbral en la mediana, contorno con vecindad 4, ε = 2…256, mínimo de 4 desplazamientos). Método sin cambios respecto al plan.
+
+| Configuración | D |
+|---|---|
+| Sin warp, 6 octavas, H 0,40 / 0,65 / 0,90 | 1,44 / 1,33 / 1,21 |
+| Warp 2,5, 6 octavas, H 0,40 / 0,65 / 0,90 | 1,92 / 1,79 / 1,62 |
+| Warp 2,5, 5 / 4 / 3 / 2 octavas, H 0,65 | 1,73 / 1,63 / 1,52 / 1,39 |
+| Warp 2,5, 3 octavas, H 0,40 / 0,65 / 0,90 | 1,60 / 1,52 / 1,44 |
+| Presets, 6 octavas (H, warp de la tabla C4) | 1,79–1,92 (fuera de 1,25–1,55) |
+| Presets, 3 octavas | relax 1,52 · enfoque 1,31 · meditación 1,61 · pre-sueño 1,41 · gamma 1,42 · respiración 1,52 |
+| Presets, 2 octavas | relax 1,39 · enfoque 1,20 · meditación 1,48 · pre-sueño 1,31 · gamma 1,31 · respiración 1,39 |
+
+**Lo que se sabe:**
+- Sin domain warping, D ≈ 2 − H (1,33 a H = 0,65), como predice la teoría. La monotonía D(0,4) > D(0,65) > D(0,9) se cumple con y sin warp.
+- El domain warping añade complejidad al contorno: con la deformación de los presets (1,5–3,0), D sale entre 1,8 y 1,9 con 6 octavas.
+- Subir H solo no basta: con deformación 2,5 y 6 octavas, H = 0,9 da 1,62.
+- Con el procedimiento del plan (ajustar H dentro de 0,5–0,7 y luego las octavas), no hay un valor de octavas que deje los seis presets dentro de 1,25–1,55: con 3 octavas falla meditación (1,61); con 2, falla enfoque (1,20).
+
+**Decisión pendiente** (no se ha cambiado nada del shader ni de los presets):
+1. Bajar la deformación de meditación (p. ej., de 3,0 a 2,0) y usar 3 octavas. Hay que medir el resultado.
+2. Mantener 6 octavas y registrar D ≈ 1,6–1,9 como dato real, sin cumplir el rango del plan.
+3. Otra combinación de octavas y deformación, que hay que medir.
+
+La prueba del rango por preset se ha quitado de `tests/boxcount.test.ts` para no dejarla en rojo; queda la de monotonía (D(0,40) > D(0,65) > D(0,90)), que pasa.

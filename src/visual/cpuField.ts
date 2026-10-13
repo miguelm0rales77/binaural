@@ -118,3 +118,19 @@ export function meanLuminance(w: number, h: number, s: VisualSettings, f: CpuFra
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) sum += luminance(pixelColor(x, y, w, h, s, f, octaves))
   return sum / (w * h)
 }
+
+/** Valor escalar del campo (la `v` del shader, antes de la paleta): lo usa la medida de la dimensión fractal. */
+export function fieldValue(x: number, y: number, w: number, h: number, s: VisualSettings, f: CpuFrame, octaves: number): number {
+  const gain = gainFromHurst(s.hurst)
+  const seed = s.seed
+  const breath = f.lung - 0.5
+  const scale = 3 / h
+  const px = (x + 0.5 - 0.5 * w) * scale * (1 + 0.06 * breath)
+  const py = (y + 0.5 - 0.5 * h) * scale * (1 + 0.06 * breath)
+  const warp = s.warp * (1 + 0.2 * breath)
+  const qx = fbm(px + f.t * 0.01, py + f.t * 0.01, gain, octaves, seed)
+  const qy = fbm(px + 5.2 - f.t * 0.008, py + 1.3 - f.t * 0.008, gain, octaves, seed)
+  const rx = fbm(px + warp * qx + 1.7, py + warp * qy + 9.2, gain, octaves, seed)
+  const ry = fbm(px + warp * qx + 8.3, py + warp * qy + 2.8, gain, octaves, seed)
+  return fbm(px + warp * rx, py + warp * ry, gain, octaves, seed)
+}
