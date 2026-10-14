@@ -45,8 +45,7 @@ export function ExportPanel({ params, program, timerMin, disabled }: Props) {
     setState({ kind: 'running', fraction: 0 })
     const h = exportWav(
       loop
-        ? // El bucle no incluye la respiración: no cierra en ciclos enteros y se oiría un salto.
-          { kind: 'loop', params: { ...params, breath: { ...params.breath, enabled: false } } }
+        ? { kind: 'loop', params }
         : { kind: 'session', params, program, seconds: safeMinutes * 60 },
       (fraction) => setState({ kind: 'running', fraction }),
     )

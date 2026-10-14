@@ -189,12 +189,15 @@ export class DspEngine {
     return clamp(1 - (at - stop) / BREATH_FADE_SEC, 0, 1)
   }
 
-  /** Arranca una nota de campanilla desde fase cero (empieza sin salto) y cae sola. */
+  /**
+   * Arranca una nota de campanilla y cae sola. La primera muestra vale 0: el oscilador empieza una fase atrás
+   * (el avance del primer muestreo la lleva a 0). Así no hay clic ni en directo ni en el empalme del bucle.
+   */
   private startChime(hz: number): void {
     this.chimeEnv = 1
     this.chimeInc = TWO_PI * hz * this.invFs
-    this.chimeA.phase = 0
-    this.chimeB.phase = 0
+    this.chimeA.phase = -this.chimeInc
+    this.chimeB.phase = -2 * this.chimeInc
   }
 
   private allWeights(): Smoother[] {

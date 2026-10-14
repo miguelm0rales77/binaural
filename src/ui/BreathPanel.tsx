@@ -377,7 +377,6 @@ export function BreathPanel({ presets, breath, timerMin, clock, onChange, onPres
       )}
       <p className="muted">{BREATH_TEXT.notSensor}</p>
       <p className="muted">{BREATH_TEXT.activities}</p>
-      <p className="muted">{BREATH_TEXT.loopNote}</p>
 
       {summary && (
         <div className="breath-summary" role="status" data-testid="breath-summary">

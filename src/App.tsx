@@ -280,9 +280,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     }
     setBgError(null)
     setBgStale(false)
-    // El bucle de 5 min no incluye la respiración: no cierra en ciclos enteros y se oiría un salto.
     bg.current
-      ?.start({ ...params, breath: { ...params.breath, enabled: false } }, program?.name ?? 'Binaural')
+      ?.start(params, program?.name ?? 'Binaural')
       .catch((e) => setBgError(e instanceof Error ? e.message : String(e)))
   }
 

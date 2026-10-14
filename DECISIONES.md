@@ -272,3 +272,24 @@
 - **Prueba de estrés:** la de seguridad visual usa 6 octavas a propósito (el caso más áspero), aunque los presets usen 2 o 3.
 - **Paleta «Relajación» corregida:** ver la entrada de la Fase 12.
 - **Sin verificar en el navegador tras el cambio de octavas:** el shader no cambió, solo el uniforme `u_octaves`, que ya se probó con 6. Hay que mirar cómo se ve cada preset con 2 o 3 octavas.
+
+## Revisión final y cierre
+Revisión del código y de la app completa antes de dar el proyecto por terminado. Lo que se encontró y lo que se cambió:
+
+- **Bucle con respiración (§B3) — implementado.** La exportación en bucle y el modo de segundo plano incluyen ahora la respiración. La duración del bucle se ajusta al múltiplo más cercano de ciclos enteros (`loopSecondsFor`; a 6 rpm son 5 min exactos). Dentro del bucle no hay rampa (no es periódica, así que el empalme se oiría) y no se aplica el fin de respiración de Pre-sueño a los 10 min (igual que no se aplica el programa). Sin respiración, el bucle sigue siendo de 5 min. Se quitaron las exclusiones que había y el aviso correspondiente. Tests en `tests/loop-breath.test.ts`.
+- **Fallo corregido: oleaje perdido en bucles con ruido «ninguno».** El motor de fondo del bucle no se creaba si no había ruido, así que el oleaje (y su rosa de respaldo) no sonaba. Ahora se crea también cuando el oleaje está activo. Además, cada señal de respiración vive en un solo motor (el oleaje en el de fondo; el tono guía y la campanilla en el del tono), para no duplicarla.
+- **Fallo corregido: clic en la campanilla.** La nota empezaba con la primera muestra ya avanzada (≈ 0,107 de amplitud desde silencio), lo que producía un clic tanto en directo como en el empalme del bucle. Ahora empieza en 0 (el oscilador arranca una fase atrás). El empalme del bucle pasa de un salto de 0,108 a 0. Consecuencia: la nota cae hasta 2 muestras después del cambio de fase exacto, en vez de 1 (la tolerancia de los tests pasa de ±1 a ±2 muestras, y está explicada en el test).
+- **Código muerto eliminado:** `stepAt` (solo lo usaba su propio test; la prueba de escalones usa `stepDone` y `afterRest`).
+- **README actualizado:** respiración, «Mi frecuencia», registro, vista fractal, bucles con respiración, limitaciones de seguridad y la advertencia sobre no retener la respiración en actividades peligrosas.
+- **Comprobaciones:** 237 tests en verde, tipos, lint (sin avisos) y build correctos. Carga de la app en el navegador sin errores de consola y con todas las secciones presentes.
+
+**Pendiente, no verificable desde aquí:**
+- Bucle con respiración en iPhone con la pantalla bloqueada (Fase 9, criterio de aceptación). El bucle está probado en Node, no en un dispositivo.
+- Safari (iOS y macOS) y Firefox, incluida la vista fractal. Solo se ha probado en Chromium.
+- Rendimiento de la vista fractal en iPhone (criterio de 50 fps).
+- La vibración de la respiración: solo funciona en Android.
+
+**Observaciones sin cambiar:**
+- El preset «Respiración (sin audio)» de la vista fractal no respira: sin audio no hay reloj. Es solo una paleta.
+- La comprobación «la imagen no sigue el pulso del audio» es casi trivial, porque el campo no recibe ningún parámetro de pulso. La prueba de flicker sí mide algo real.
+- La vista fractal es un diálogo modal sin trampa de foco: Tab puede salir hacia la página de fondo. No afecta a la seguridad visual, pero no es lo ideal para teclado.

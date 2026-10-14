@@ -31,8 +31,6 @@ export const BREATH_TEXT = {
   /** Frase de cierre del panel: el biofeedback aún no existe, así que la guía es solo un ritmo. */
   notSensor:
     'Es un ritmo para guiar la respiración, no un biofeedback: la aplicación no mide tu pulso.',
-  loopNote:
-    'El modo de segundo plano y la exportación en bucle todavía no incluyen la respiración guiada.',
   lips: 'Espira despacio, con los labios fruncidos.',
   /** Aviso al quitar las limitaciones de seguridad del editor. */
   advanced:

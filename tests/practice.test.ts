@@ -23,7 +23,6 @@ import {
   TEST_TOTAL_SEC,
   afterRest,
   recommend,
-  stepAt,
   stepDone,
   type StepScore,
 } from '../src/resonance'
@@ -131,13 +130,6 @@ describe('Mi frecuencia: escalones y recomendación', () => {
     expect(STEP_SEC).toBe(120)
     expect(REST_SEC).toBe(60)
     expect(TEST_TOTAL_SEC).toBe(14 * 60)
-  })
-
-  it('stepAt ubica el escalón y el descanso en cada instante', () => {
-    expect(stepAt(0)).toMatchObject({ index: 0, rpm: 6.5, inStep: true })
-    expect(stepAt(125)).toMatchObject({ index: 0, rpm: 6.5, inStep: false })
-    expect(stepAt(185)).toMatchObject({ index: 1, rpm: 6.0, inStep: true })
-    expect(stepAt(TEST_TOTAL_SEC)).toBeNull()
   })
 
   it('recomienda el ritmo más cómodo entre los que no dejaron falta de aire', () => {

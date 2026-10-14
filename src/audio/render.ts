@@ -79,6 +79,31 @@ export function quantizeForLoop(p: EngineParams, T: number): EngineParams {
   return { ...p, carrierHz: (lo + hi) / 2, beatHz: hi - lo }
 }
 
+/**
+ * Duración real del bucle. Con respiración, el número de ciclos respiratorios tiene que ser entero (§B3): así el
+ * empalme cae siempre en el mismo punto de la respiración. Se elige el múltiplo más cercano a `T`.
+ * Sin respiración, es `T`.
+ */
+export function loopSecondsFor(params: EngineParams, T: number = LOOP_SECONDS): number {
+  const b = params.breath
+  if (!b.enabled) return T
+  const rpm = b.pattern.rpm
+  const cycles = Math.max(1, Math.round((T * rpm) / 60))
+  return (cycles * 60) / rpm
+}
+
+/**
+ * Parámetros del bucle con respiración: sin rampa (no es periódica, así que el empalme se oiría) y sin fin de
+ * respiración a los 10 min (el bucle no lo aplica, igual que no aplica el programa).
+ */
+function loopBreathParams(params: EngineParams): EngineParams {
+  const b = params.breath
+  return {
+    ...params,
+    breath: { ...b, pattern: { ...b.pattern, rampSec: 0 }, stopAtSec: null },
+  }
+}
+
 function checkCancel(o: RenderOptions) {
   if (o.shouldCancel?.()) throw new Error('cancelled')
 }
@@ -132,17 +157,28 @@ function renderLoop(
   o: RenderOptions,
 ): RenderOutput {
   const fs = job.sampleRate ?? EXPORT_SAMPLE_RATE
-  const T = job.loopSec ?? LOOP_SECONDS
+  const breathOn = job.params.breath.enabled
+  const T = loopSecondsFor(job.params, job.loopSec ?? LOOP_SECONDS)
   const N = Math.round(T * fs)
-  const hasBg = job.params.noiseType !== 'none' && job.params.noiseGain > 0
+  // El oleaje vive en el motor de fondo (aunque el ruido esté en «ninguno», usa su rosa de respaldo).
+  const hasBg =
+    (job.params.noiseType !== 'none' && job.params.noiseGain > 0) || (breathOn && job.params.breath.cues.swell)
   const X = hasBg ? Math.min(Math.round((job.crossfadeSec ?? CROSSFADE_SECONDS) * fs), Math.floor(N / 2)) : 0
-  const q = quantizeForLoop(job.params, T)
+  const p0 = breathOn ? loopBreathParams(job.params) : job.params
+  const q = quantizeForLoop(p0, T)
   const base = { fadeSec: 0, softClip: false }
   const bgRand = o.seed === undefined ? undefined : mulberry32(o.seed)
   const toneRand = o.seed === undefined ? undefined : mulberry32(o.seed + 1_000_003)
+  // Cada señal de respiración vive en un solo motor: el oleaje en el de fondo; el tono guía y la campanilla en el del tono.
+  const toneBreath = { ...q.breath, cues: { ...q.breath.cues, swell: false } }
+  const bgBreath = { ...q.breath, cues: { ...q.breath.cues, guideTone: false, chime: false } }
 
-  const tone = new DspEngine(fs, { ...q, noiseGain: 0, noiseType: 'none' }, { ...base, rand: toneRand })
-  const bg = hasBg ? new DspEngine(fs, { ...q, toneGain: 0 }, { ...base, rand: bgRand }) : null
+  const tone = new DspEngine(
+    fs,
+    { ...q, noiseGain: 0, noiseType: 'none', breath: toneBreath },
+    { ...base, rand: toneRand },
+  )
+  const bg = hasBg ? new DspEngine(fs, { ...q, toneGain: 0, breath: bgBreath }, { ...base, rand: bgRand }) : null
   tone.start()
   bg?.start()
 

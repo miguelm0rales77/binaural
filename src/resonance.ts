@@ -33,21 +33,6 @@ export function recommend(scores: readonly StepScore[]): number | null {
   return best?.rpm ?? null
 }
 
-/** Escalón en el que está la prueba `elapsedSec` segundos después de empezar, o null si ya terminó. */
-export function stepAt(elapsedSec: number): { index: number; rpm: number; inStep: boolean } | null {
-  let t = 0
-  for (let i = 0; i < RESONANCE_STEPS.length; i++) {
-    const step = RESONANCE_STEPS[i] as number
-    if (elapsedSec < t + STEP_SEC) return { index: i, rpm: step, inStep: true }
-    t += STEP_SEC
-    if (i < RESONANCE_STEPS.length - 1) {
-      if (elapsedSec < t + REST_SEC) return { index: i, rpm: step, inStep: false }
-      t += REST_SEC
-    }
-  }
-  return null
-}
-
 /** ¿Ha terminado el escalón de respiración guiada? `stepElapsedSec` se mide desde el inicio del escalón. */
 export function stepDone(stepElapsedSec: number): boolean {
   return stepElapsedSec >= STEP_SEC

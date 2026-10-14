@@ -130,7 +130,8 @@ describe('4. campanillas en el cambio de fase', () => {
     }
     console.log(`  cambios de fase: ${expected.join(', ')}  →  notas: ${onsets.join(', ')}`)
     expect(onsets.length).toBe(expected.length)
-    onsets.forEach((o, k) => expect(Math.abs(o - (expected[k] as number))).toBeLessThanOrEqual(1))
+    // ±2 muestras: la nota empieza en 0 (una muestra de arranque suave) y el instante del cambio se redondea en coma flotante.
+    onsets.forEach((o, k) => expect(Math.abs(o - (expected[k] as number))).toBeLessThanOrEqual(2))
   })
 
   it('la nota de inspiración (660 Hz) tiene más cruces por cero que la de espiración (440 Hz)', () => {
