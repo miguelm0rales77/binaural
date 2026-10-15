@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DspEngine } from '../src/dsp/engine'
 import { mulberry32 } from '../src/dsp/noise'
 import { defaultParams } from '../src/dsp/params'
+import { DEFAULT_PARAMS } from '../src/dsp/types'
 import { PRESETS, PRE_SLEEP_PROGRAM } from '../src/presets'
 import {
   FADE_SECONDS,
@@ -134,7 +135,7 @@ describe('exportación de sesión', () => {
   it('exporta el programa Pre-sueño: el pulso baja de 10 a 3 Hz (se mide en el audio)', { timeout: 120_000 }, () => {
     const prog = { ...PRE_SLEEP_PROGRAM, durationSec: 30 * 60 }
     const pre = PRESETS.find((p) => p.id === 'pre-sleep')
-    const params = { ...base, ...pre?.params, noiseType: 'none' as const }
+    const params = { ...base, ...pre?.params, breath: { ...DEFAULT_PARAMS.breath, ...pre?.params?.breath }, noiseType: 'none' as const }
     const out = decode(renderToBytes({ kind: 'session', params, program: prog, seconds: 30 * 60, sampleRate: 4000 }))
     const fs = 4000
     const beatAt = (min: number) => {

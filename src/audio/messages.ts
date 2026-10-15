@@ -1,8 +1,8 @@
-import type { EngineParams, Program } from '../dsp/types'
+import type { ParamsPatch, Program } from '../dsp/types'
 
 /** Mensajes del hilo principal al worklet. */
 export type ToWorklet =
-  | { type: 'params'; params: Partial<EngineParams> }
+  | { type: 'params'; params: ParamsPatch }
   | { type: 'start' }
   | { type: 'stop' }
   | { type: 'program'; program: Program | null; startAtSec: number }

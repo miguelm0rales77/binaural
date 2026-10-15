@@ -1,5 +1,6 @@
 import { isGenerated } from './dsp/params'
 import type { BeatMode, NoiseType, Preset, Program } from './dsp/types'
+import { PRE_SLEEP_PATTERN, RESONANCE_PATTERN } from './breathPresets'
 import { bandFor } from './bands'
 
 export const MODE_LABELS: Record<BeatMode, string> = {
@@ -44,32 +45,51 @@ export const PRESETS: readonly Preset[] = [
   {
     id: 'relax-alpha',
     name: 'Relajación (alfa)',
-    params: { mode: 'binaural', carrierHz: 250, beatHz: 10, noiseType: 'pink', noiseGain: 0.15 },
+    params: {
+      mode: 'binaural',
+      carrierHz: 250,
+      beatHz: 10,
+      noiseType: 'pink',
+      noiseGain: 0.15,
+      breath: { enabled: true, pattern: RESONANCE_PATTERN, stopAtSec: null },
+    },
     suggestedMinutes: 20,
   },
   {
     id: 'focus-beta',
     name: 'Concentración (beta)',
-    params: { mode: 'binaural', carrierHz: 400, beatHz: 16, noiseType: 'pink', noiseGain: 0.15 },
+    params: { mode: 'binaural', carrierHz: 400, beatHz: 16, noiseType: 'pink', noiseGain: 0.15, breath: { enabled: false } },
     suggestedMinutes: 30,
   },
   {
     id: 'meditation-theta',
     name: 'Meditación (theta)',
-    params: { mode: 'binaural', carrierHz: 200, beatHz: 6, noiseType: 'none' },
+    params: { mode: 'binaural', carrierHz: 200, beatHz: 6, noiseType: 'none', breath: { enabled: false } },
     suggestedMinutes: 20,
   },
   {
     id: 'pre-sleep',
     name: 'Pre-sueño (programa)',
-    params: { mode: 'binaural', carrierHz: 200, beatHz: 10, noiseType: 'brown', noiseGain: 0.25 },
+    params: {
+      mode: 'binaural',
+      carrierHz: 200,
+      beatHz: 10,
+      noiseType: 'brown',
+      noiseGain: 0.25,
+      // La respiración dura los primeros 10 min y después se apaga con un fundido de 30 s (§B5, Fase 9).
+      breath: {
+        enabled: true,
+        pattern: PRE_SLEEP_PATTERN,
+        stopAtSec: 10 * MIN,
+      },
+    },
     program: PRE_SLEEP_PROGRAM,
     suggestedMinutes: 30,
   },
   {
     id: 'gamma-40',
     name: 'Reflexión (gamma)',
-    params: { mode: 'isochronic', carrierHz: 400, beatHz: 40, isoDepth: 0.8, noiseType: 'none' },
+    params: { mode: 'isochronic', carrierHz: 400, beatHz: 40, isoDepth: 0.8, noiseType: 'none', breath: { enabled: false } },
     suggestedMinutes: 15,
   },
 ]
