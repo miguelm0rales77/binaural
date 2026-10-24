@@ -22,6 +22,12 @@ export interface VisualParams {
    * 1,25–1,55; por eso cada preset usa 2 o 3, el valor más alto que cumple la medida (ver DECISIONES.md, Fase 14).
    */
   octaves: number
+  /**
+   * Semilla del ruido: cada preset tiene la suya, así la forma del fractal es distinta en cada uno.
+   * Con la misma semilla, los presets solo cambiaban de color y de deformación, y el dibujo parecía igual.
+   * Las semillas elegidas dan una dimensión dentro de 1,25–1,55 (ver DECISIONES.md, Bloque C).
+   */
+  seed: number
 }
 
 export interface VisualPreset {
@@ -35,32 +41,32 @@ export const VISUAL_PRESETS: readonly VisualPreset[] = [
   {
     id: 'relax',
     name: 'Relajación (alfa)',
-    params: { hurst: 0.65, warp: 2.5, speed: 1.0, brightness: 0.8, palette: 'calm', night: false, octaves: 2 },
+    params: { hurst: 0.65, warp: 2.5, speed: 1.0, brightness: 0.8, palette: 'calm', night: false, octaves: 2, seed: 19 },
   },
   {
     id: 'focus',
     name: 'Concentración (beta)',
-    params: { hurst: 0.7, warp: 1.5, speed: 0.6, brightness: 0.6, palette: 'focus', night: false, octaves: 3 },
+    params: { hurst: 0.7, warp: 1.5, speed: 0.6, brightness: 0.6, palette: 'focus', night: false, octaves: 3, seed: 37 },
   },
   {
     id: 'meditation',
     name: 'Meditación (theta)',
-    params: { hurst: 0.6, warp: 3.0, speed: 0.8, brightness: 0.8, palette: 'depth', night: false, octaves: 2 },
+    params: { hurst: 0.6, warp: 3.0, speed: 0.8, brightness: 0.8, palette: 'depth', night: false, octaves: 2, seed: 127 },
   },
   {
     id: 'sleep',
     name: 'Pre-sueño',
-    params: { hurst: 0.7, warp: 2.0, speed: 0.4, brightness: 0.35, palette: 'night', night: true, octaves: 3 },
+    params: { hurst: 0.7, warp: 2.0, speed: 0.4, brightness: 0.35, palette: 'night', night: true, octaves: 3, seed: 71 },
   },
   {
     id: 'gamma',
     name: 'Reflexión (gamma)',
-    params: { hurst: 0.65, warp: 2.0, speed: 0.6, brightness: 0.7, palette: 'neutral', night: false, octaves: 3 },
+    params: { hurst: 0.65, warp: 2.0, speed: 0.6, brightness: 0.7, palette: 'neutral', night: false, octaves: 3, seed: 89 },
   },
   {
     id: 'breath',
     name: 'Respiración (sin audio)',
-    params: { hurst: 0.65, warp: 2.5, speed: 0.7, brightness: 0.7, palette: 'teal', night: false, octaves: 2 },
+    params: { hurst: 0.65, warp: 2.5, speed: 0.7, brightness: 0.7, palette: 'teal', night: false, octaves: 2, seed: 101 },
   },
 ]
 
@@ -103,6 +109,7 @@ export function sanitizeVisual(p: VisualParams): VisualParams {
     palette: p.palette in PALETTES ? p.palette : 'calm',
     night: p.night,
     octaves: Math.round(clamp(p.octaves, 1, 6)),
+    seed: Math.round(clamp(p.seed, 1, 9999)),
   }
 }
 

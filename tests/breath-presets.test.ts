@@ -12,12 +12,13 @@ describe('presets de respiración', () => {
     expect([sleep?.pattern.rpm, sleep?.pattern.inhaleRatio, sleep?.noise?.noiseType]).toEqual([5.5, 0.35, 'brown'])
   })
 
-  it('la resonancia tiene rampa de 8 a 6 rpm en 120 s', () => {
-    expect(RESONANCE_PATTERN).toMatchObject({ rpm: 6, inhaleRatio: 0.4, rampFromRpm: 8, rampSec: 120 })
+  it('la resonancia no tiene aproximación gradual por defecto (el ritmo suena desde el primer ciclo)', () => {
+    expect(RESONANCE_PATTERN).toMatchObject({ rpm: 6, inhaleRatio: 0.4, rampSec: 0 })
   })
 
   it('describeBreath resume el patrón', () => {
-    expect(describeBreath(RESONANCE_PATTERN)).toBe('6,0 rpm · inspiración 4,0 s · espiración 6,0 s · rampa desde 8,0 rpm')
+    expect(describeBreath(RESONANCE_PATTERN)).toBe('6,0 rpm · inspiración 4,0 s · espiración 6,0 s')
+    expect(describeBreath({ ...RESONANCE_PATTERN, rampSec: 120 })).toContain('aproximación gradual desde 6,0 rpm')
   })
 })
 

@@ -12,7 +12,7 @@ const N = 1024
 const SCALE = 3
 const SIZES = [2, 4, 8, 16, 32, 64, 128, 256]
 
-function fieldGrid(f: Pick<FieldParams, 'hurst' | 'warp' | 'octaves'>): Uint8Array {
+function fieldGrid(f: Pick<FieldParams, 'hurst' | 'warp' | 'octaves' | 'seed'>): Uint8Array {
   const vals = new Float64Array(N * N)
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) {
@@ -22,7 +22,6 @@ function fieldGrid(f: Pick<FieldParams, 'hurst' | 'warp' | 'octaves'>): Uint8Arr
         ...f,
         t: 0,
         lung: 0.5,
-        seed: 7,
         brightness: 1,
         palette: PALETTES.neutral,
       })
@@ -105,15 +104,15 @@ export function boxDimension(cls: Uint8Array): number {
 describe('dimensión fractal (box-counting)', () => {
   // Campo de 1024 × 1024 con fBm de 6 octavas: unos segundos por campo en Node.
   const cache = new Map<string, number>()
-  const dimOf = (name: string, hurst: number, warp: number, octaves: number) => {
-    const key = `${name}|${hurst}|${warp}|${octaves}`
-    if (!cache.has(key)) cache.set(key, boxDimension(fieldGrid({ hurst, warp, octaves })))
+  const dimOf = (name: string, hurst: number, warp: number, octaves: number, seed: number) => {
+    const key = `${name}|${hurst}|${warp}|${octaves}|${seed}`
+    if (!cache.has(key)) cache.set(key, boxDimension(fieldGrid({ hurst, warp, octaves, seed })))
     return cache.get(key) as number
   }
 
   it('cada preset da 1,25 ≤ D ≤ 1,55 con sus octavas (ver DECISIONES.md, Fase 14)', { timeout: 300_000 }, () => {
     for (const p of VISUAL_PRESETS) {
-      const d = dimOf(p.id, p.params.hurst, p.params.warp, p.params.octaves)
+      const d = dimOf(p.id, p.params.hurst, p.params.warp, p.params.octaves, p.params.seed)
       console.log(`  ${p.name}: H=${p.params.hurst} warp=${p.params.warp} octavas=${p.params.octaves} → D = ${d.toFixed(3)}`)
       expect(d).toBeGreaterThanOrEqual(1.25)
       expect(d).toBeLessThanOrEqual(1.55)
@@ -121,9 +120,9 @@ describe('dimensión fractal (box-counting)', () => {
   })
 
   it('D(H = 0,4) > D(H = 0,65) > D(H = 0,9) (mismo warp y 2 octavas)', { timeout: 300_000 }, () => {
-    const d04 = dimOf('h', 0.4, 2.5, 2)
-    const d065 = dimOf('h', 0.65, 2.5, 2)
-    const d09 = dimOf('h', 0.9, 2.5, 2)
+    const d04 = dimOf('h', 0.4, 2.5, 2, 7)
+    const d065 = dimOf('h', 0.65, 2.5, 2, 7)
+    const d09 = dimOf('h', 0.9, 2.5, 2, 7)
     console.log(`  D(0,4) = ${d04.toFixed(3)}, D(0,65) = ${d065.toFixed(3)}, D(0,9) = ${d09.toFixed(3)}`)
     expect(d04).toBeGreaterThan(d065)
     expect(d065).toBeGreaterThan(d09)

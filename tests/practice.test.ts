@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { presetLabel as presetLabelFn, presetsFor } from '../src/breathPresets'
+import { patternKey, presetLabel as presetLabelFn, presetsFor } from '../src/breathPresets'
 import {
   DEFAULT_GOAL_MIN,
   MAX_ENTRIES,
@@ -172,9 +172,12 @@ describe('Mi frecuencia: escalones y recomendación', () => {
 describe('nombre del preset en el registro', () => {
   it('una sesión con el ritmo de un preset se registra con su nombre; si no, «Personalizado»', () => {
     const presets = presetsFor(null)
-    expect(presetLabelFn({ rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0, rampSec: 120 }, presets)).toBe('Resonancia 6')
-    expect(presetLabelFn({ rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0, rampSec: 0 }, presets)).toBe('Microdosis 3 min')
+    expect(presetLabelFn({ rpm: 5.5, inhaleRatio: 0.35, holdInSec: 0, holdOutSec: 0, rampSec: 0 }, presets)).toBe('Pre-sueño')
     expect(presetLabelFn({ rpm: 4.5, inhaleRatio: 0.45, holdInSec: 0, holdOutSec: 0, rampSec: 0 }, presets)).toBe('Personalizado')
+    // Resonancia y Microdosis comparten patrón: la App usa el preset elegido (patternKey), no este emparejamiento
+    expect(patternKey({ rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0, rampSec: 0 })).toBe(
+      patternKey({ rpm: 6, inhaleRatio: 0.4, holdInSec: 0, holdOutSec: 0 }),
+    )
   })
 })
 
