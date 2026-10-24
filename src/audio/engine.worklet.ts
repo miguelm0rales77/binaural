@@ -1,5 +1,5 @@
 import { DspEngine } from '../dsp/engine'
-import type { EngineParams } from '../dsp/types'
+import type { ParamsPatch } from '../dsp/types'
 import { PROCESSOR_NAME, type FromWorklet, type ToWorklet } from './messages'
 
 /** Como mucho 4 mensajes de estado por segundo. */
@@ -11,7 +11,7 @@ class BinauralProcessor extends AudioWorkletProcessor {
 
   constructor(options: AudioWorkletNodeOptions) {
     super(options)
-    const initial = (options.processorOptions?.params ?? {}) as Partial<EngineParams>
+    const initial = (options.processorOptions?.params ?? {}) as ParamsPatch
     this.engine = new DspEngine(sampleRate, initial)
     this.engine.onStopped = () => this.post({ type: 'stopped' })
     this.port.onmessage = (e: MessageEvent<ToWorklet>) => this.onMessage(e.data)

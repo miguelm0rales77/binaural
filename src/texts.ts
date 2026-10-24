@@ -13,6 +13,54 @@ export const FIRST_USE = {
   button: 'Entendido',
 } as const
 
+/** Respiración guiada (§B4 del plan). Solo describe cómo respirar; no promete ningún efecto. */
+export const BREATH_TEXT = {
+  safety: {
+    title: 'Antes de usar la respiración guiada',
+    intro: 'Respira de forma suave y natural. Lee estos avisos; solo aparecen la primera vez.',
+    items: [
+      'Respira de forma suave y natural, por la nariz y con el abdomen. No hagas respiraciones profundas forzadas.',
+      'Si notas mareo, hormigueo o palpitaciones, vuelve a respirar de forma normal: suelen aparecer al respirar más de lo necesario.',
+      'Si tienes una enfermedad cardíaca o respiratoria importante, consulta antes con tu médico.',
+      'En algunas personas con trastorno de pánico, centrarse en la respiración puede aumentar la inquietud al principio. Si es tu caso, empieza con sesiones cortas.',
+      'No hagas estas respiraciones mientras haces actividades en las que perder el conocimiento podría ponerte en peligro: nadar o estar en el agua, conducir, manejar maquinaria o subir a una escalera.',
+      'No es un producto sanitario ni sustituye a ningún tratamiento médico o psicológico.',
+    ],
+    button: 'Entendido',
+  },
+  /** Frase de cierre del panel: el biofeedback aún no existe, así que la guía es solo un ritmo. */
+  notSensor:
+    'Es un ritmo para guiar la respiración, no un biofeedback: la aplicación no mide tu pulso.',
+  lips: 'Espira despacio, con los labios fruncidos.',
+  /** Aviso al quitar las limitaciones de seguridad del editor. */
+  advanced:
+    'Sólo para respiradores avanzados. Sin estas limitaciones puedes elegir ciclos muy rápidos, con riesgo de respirar de más (mareo, hormigueo), o retenciones largas, con riesgo de mareo o pérdida de conocimiento. Al quitarlas asumes ese riesgo.',
+  /** Recordatorio permanente: nunca con retenciones en actividades peligrosas si se pierde el conocimiento. */
+  activities:
+    'No hagas estas respiraciones, sobre todo las retenciones, mientras haces actividades en las que perder el conocimiento podría ponerte en peligro: nadar o estar en el agua, conducir, manejar maquinaria o subir a una escalera.',
+} as const
+
+/** Aviso de fotosensibilidad de la vista fractal: se muestra la primera vez que se abre (§C2.5). */
+export const FIRST_USE_VISUAL = {
+  title: 'Antes de usar la vista fractal',
+  text: 'La imagen cambia de color y de forma muy despacio, sin destellos y sin seguir el pulso del audio. Aun así, si tienes epilepsia o eres sensible a la luz, no la uses. Sal con el botón «Salir» o con la tecla Esc.',
+  button: 'Entendido',
+} as const
+
+/** Etiquetas de la vista fractal. */
+export const VISUAL_LABELS = {
+  night: 'Modo noche',
+  palettes: {
+    calm: 'Verdes y azules suaves',
+    focus: 'Neutra, de bajo contraste',
+    depth: 'Azul profundo y violeta',
+    night: 'Ámbar oscuro',
+    neutral: 'Neutra',
+    teal: 'Verde azulado suave',
+  },
+  staticHint: 'La imagen no parpadea ni sigue al pulso del audio: solo puede seguir la respiración, que es muy lenta.',
+} as const
+
 export const ISO_FAST_WARNING = {
   text: 'Los pulsos isocrónicos rápidos (13–40 Hz) se perciben como un parpadeo de volumen intenso. Empieza con volumen bajo y detén el sonido si notas molestias. Evítalos si tienes epilepsia o crisis desencadenadas por sonidos.',
   button: 'Entendido',

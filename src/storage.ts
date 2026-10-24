@@ -8,6 +8,8 @@ export const MAX_TIMER_MIN = 240
 /** v2: el aviso de primer uso incorporó la nota de sensibilidad sensorial, así que se vuelve a mostrar una vez. */
 export const ACCEPTED_KEY = 'binaural:accepted:v2'
 export const ISO_WARNING_KEY = 'binaural:iso-warning-seen:v1'
+/** Aviso de seguridad de la respiración guiada: se muestra la primera vez que se activa. */
+export const BREATH_ACCEPTED_KEY = 'binaural:breath-accepted:v1'
 export const PRESETS_KEY = 'binaural:presets:v1'
 export const MAX_USER_PRESETS = 50
 export const MAX_NAME_LENGTH = 40
