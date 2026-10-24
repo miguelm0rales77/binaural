@@ -8,6 +8,9 @@ in vec2 a_pos;
 void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
 `
 
+/** Duración del fundido a negro entre dos formas (s): salir 1 s, entrar 1 s. Lento, sin destellos. */
+const SEED_FADE_SEC = 1
+
 const UNIFORMS = [
   'u_t',
   'u_res',
@@ -46,7 +49,10 @@ export class FractalRenderer {
   private readonly loc: Record<(typeof UNIFORMS)[number], WebGLUniformLocation | null>
   private readonly quality = new QualityGovernor()
   private readonly reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-  private readonly seed = 7
+  /** Semilla que se dibuja ahora; cambia a la del objetivo cuando la imagen está a negro. */
+  private shownSeed: number
+  /** Brillo de transición entre formas (1 = normal, 0 = negro). */
+  private seedFade = 1
   private target: VisualParams
   private live: Live
   private t = 0
@@ -74,6 +80,7 @@ export class FractalRenderer {
     for (const name of UNIFORMS) loc[name] = gl.getUniformLocation(this.program, name)
     this.loc = loc
     this.target = initial
+    this.shownSeed = initial.seed
     const p = PALETTES[initial.palette]
     this.live = {
       hurst: initial.hurst,
@@ -161,6 +168,13 @@ export class FractalRenderer {
     L.warp = approach(L.warp, tg.warp, dt)
     L.speed = approach(L.speed, tg.speed, dt)
     L.brightness = approach(L.brightness, tg.brightness, dt)
+    // Cambio de forma: se oscurece, se cambia la semilla a negro y se vuelve a iluminar.
+    if (tg.seed !== this.shownSeed) {
+      this.seedFade = Math.max(0, this.seedFade - dt / SEED_FADE_SEC)
+      if (this.seedFade === 0) this.shownSeed = tg.seed
+    } else {
+      this.seedFade = Math.min(1, this.seedFade + dt / SEED_FADE_SEC)
+    }
     const goal = flatten(paletteOf(tg.palette))
     for (let i = 0; i < 12; i++) L.pal[i] = approach(L.pal[i] as number, goal[i] as number, dt)
     this.t += dt * L.speed * motion
@@ -173,13 +187,13 @@ export class FractalRenderer {
     gl.uniform2f(u.u_res, this.canvas.width, this.canvas.height)
     gl.uniform1f(u.u_gain, Math.pow(2, -L.hurst))
     gl.uniform1f(u.u_warp, L.warp)
-    gl.uniform1f(u.u_brightness, L.brightness)
+    gl.uniform1f(u.u_brightness, L.brightness * this.seedFade)
     gl.uniform1f(u.u_lung, this.lungSource())
     gl.uniform3f(u.u_pa, L.pal[0] as number, L.pal[1] as number, L.pal[2] as number)
     gl.uniform3f(u.u_pb, L.pal[3] as number, L.pal[4] as number, L.pal[5] as number)
     gl.uniform3f(u.u_pc, L.pal[6] as number, L.pal[7] as number, L.pal[8] as number)
     gl.uniform3f(u.u_pd, L.pal[9] as number, L.pal[10] as number, L.pal[11] as number)
-    gl.uniform1i(u.u_seed, this.seed)
+    gl.uniform1i(u.u_seed, this.shownSeed)
     // Octavas del preset; si se ha degradado, una menos (sin bajar de 1).
     gl.uniform1i(u.u_octaves, q.degraded ? Math.max(1, tg.octaves - 1) : tg.octaves)
     gl.drawArrays(gl.TRIANGLES, 0, 3)

@@ -67,7 +67,7 @@ scripts/     make-icons.py: genera los iconos de la PWA (requiere Pillow)
 - **Exportación:** WAV PCM de 16 bits estéreo a 44,1 kHz, hasta 60 min, generado en un Web Worker. La opción
   «bucle de 5 min» ajusta las frecuencias para dar ciclos enteros y empalma el fondo con un fundido cruzado, así
   que el bucle no se nota. Con respiración guiada, la duración del bucle se ajusta a un número entero de ciclos
-  respiratorios (puede ser unos segundos más o menos que 5 min) y la rampa de entrada no se incluye en el bucle.
+  respiratorios (puede ser unos segundos más o menos que 5 min) y la aproximación gradual al ritmo elegido no se incluye en el bucle.
 - **Visualización (opcional):** dibuja el patrón del pulso **sin parpadeos** a propósito: un destello a 3–30 Hz
   puede desencadenar crisis en personas fotosensibles. Está desactivada por defecto y respeta
   `prefers-reduced-motion`.

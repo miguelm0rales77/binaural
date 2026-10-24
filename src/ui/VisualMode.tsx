@@ -38,14 +38,30 @@ export function VisualMode({ initial, playing, breathOn, pattern, clock, onToggl
   const ring = useRef<HTMLDivElement>(null)
   const renderer = useRef<FractalRenderer | null>(null)
 
-  // Lectura de la respiración: la misma regla que el círculo de «Respirar» (reloj del motor, no setInterval).
-  // Se guarda en una referencia dentro de un efecto, no durante el render.
+  // La vista respira si la respiración guiada está activa, o siempre con el preset «Respiración (sin audio)».
+  const guided = breathOn || preset.id === 'breath'
+  // Con audio sonando: el reloj del motor (el mismo que el círculo de «Respirar»).
+  // Sin audio: un reloj propio que empieza al abrir la vista y se reinicia al cambiar el ritmo.
+  const ownOrigin = useRef<number | null>(null)
+  const patternKey = JSON.stringify(pattern)
+  const lastKey = useRef(patternKey)
+  useEffect(() => {
+    if (lastKey.current !== patternKey) {
+      lastKey.current = patternKey
+      ownOrigin.current = null
+    }
+  }, [patternKey])
   const lungNow = (): number => {
-    if (!breathOn || !playing) return SEC_LUNG
-    const { now, startedAt } = clock()
-    if (now === null || startedAt <= 0 || now < startedAt) return SEC_LUNG
-    return breathStateInto(scratch, now - startedAt, pattern).lung
+    if (!guided) return SEC_LUNG
+    if (playing) {
+      const { now, startedAt } = clock()
+      if (now !== null && startedAt > 0 && now >= startedAt) return breathStateInto(scratch, now - startedAt, pattern).lung
+    }
+    const t = performance.now()
+    if (ownOrigin.current === null) ownOrigin.current = t
+    return breathStateInto(scratch, (t - ownOrigin.current) / 1000, pattern).lung
   }
+  // Se guarda en una referencia dentro de un efecto, no durante el render.
   const lungRef = useRef(lungNow)
   useEffect(() => {
     lungRef.current = lungNow
@@ -78,13 +94,13 @@ export function VisualMode({ initial, playing, breathOn, pattern, clock, onToggl
       if (el) {
         const lung = lungRef.current()
         el.style.transform = `scale(${(0.6 + 0.4 * lung).toFixed(3)})`
-        el.hidden = !(breathOn && playing)
+        el.hidden = !guided
       }
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
-  }, [breathOn, playing])
+  }, [guided])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

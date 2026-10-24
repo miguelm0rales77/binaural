@@ -44,7 +44,7 @@ function meanLuminance(k: number, v: VisualParams, lungOverride?: number): numbe
 describe('seguridad visual (§C2)', () => {
   // Parámetros extremos: H máximo (campo más áspero), warp máximo, velocidad y brillo al máximo, paleta de contraste.
   // Con 6 octavas (el máximo) para que el caso sea el más áspero posible.
-  const extreme = sanitizeVisual({ hurst: 0.9, warp: 4, speed: 1, brightness: 1, palette: 'focus', night: false, octaves: 6 })
+  const extreme = sanitizeVisual({ hurst: 0.9, warp: 4, speed: 1, brightness: 1, palette: 'focus', night: false, octaves: 6, seed: 7 })
 
   it('ningún par de fotogramas consecutivos cambia más de un 2 % en luminancia media (§C2.1)', { timeout: 300_000 }, () => {
     const L: number[] = []

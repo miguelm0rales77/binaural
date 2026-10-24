@@ -5,7 +5,7 @@ import { bandFor } from './bands'
 import type { BreathPattern } from './dsp/breath'
 import type { EngineParams, NoiseType, ParamsPatch, Preset, Program } from './dsp/types'
 import { MASTER_CEILING, MEDITATION_TYPES, NATURE_TYPES, RANGES, isMeditation, isNature, mergeParams, sanitizeParams } from './dsp/params'
-import { RESONANCE_PATTERN, presetLabel, presetsFor, type BreathPreset } from './breathPresets'
+import { RESONANCE_PATTERN, patternKey, presetLabel, presetsFor, type BreathPreset } from './breathPresets'
 import { loadGoal, loadPractice, loadResonance, localDate, saveGoal, savePractice, saveResonance, type PracticeEntry } from './practice'
 import { NOISE_LABELS, PRESETS } from './presets'
 import {
@@ -102,6 +102,8 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
   const [summary, setSummary] = useState<BreathSummary | null>(null)
   const [visual, setVisual] = useState<VisualPreset | null>(null)
+  // Último preset de respiración aplicado: su nombre sirve para el registro mientras el patrón no cambie.
+  const breathLabel = useRef<{ key: string; name: string } | null>(null)
   // Patrón de la sesión en curso si la respiración estaba activa al empezar, y último tiempo informado por el motor.
   const sessionBreath = useRef<{ pattern: BreathPattern; label: string } | null>(null)
   const [practice, setPractice] = useState<PracticeEntry[]>(() => loadPractice())
@@ -202,6 +204,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
 
   /** Preset de respiración: fija el patrón, el ruido que acompaña al oleaje (si lo tiene) y la duración. */
   const applyBreathPreset = (p: BreathPreset) => {
+    breathLabel.current = { key: patternKey(p.pattern), name: p.name }
     update({ breath: { enabled: true, pattern: p.pattern, stopAtSec: null }, ...(p.noise ?? {}) })
     changeTimer(p.suggestedMinutes)
   }
@@ -240,12 +243,9 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       c.stop()
       return
     }
-    await startPlayback(
-      params,
-      program,
-      timerMin === null ? null : timerMin * 60,
-      presetLabel(params.breath.pattern, presetsFor(resonance)),
-    )
+    const key = patternKey(params.breath.pattern)
+    const label = breathLabel.current?.key === key ? breathLabel.current.name : presetLabel(params.breath.pattern, presetsFor(resonance))
+    await startPlayback(params, program, timerMin === null ? null : timerMin * 60, label)
   }
 
   /** «Mi frecuencia»: arranca con la guía a `rpm`, o cambia el ritmo si ya suena. No cuenta en el registro. */

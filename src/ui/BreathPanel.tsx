@@ -155,7 +155,8 @@ export function BreathPanel({ presets, breath, timerMin, clock, onChange, onPres
 
   const setRpm = (rpm: number) => onChange({ breath: { pattern: { ...pattern, rpm, rampSec: ramp ? pattern.rampSec : 0 } } })
   const setRatio = (inhaleRatio: number) => onChange({ breath: { pattern: { ...pattern, inhaleRatio } } })
-  const setRamp = (on: boolean) => onChange({ breath: { pattern: { ...pattern, rampFromRpm: 8, rampSec: on ? 120 : 0 } } })
+  // Aproximación gradual: parte de 6 rpm y llega al ritmo elegido en 2 min.
+  const setRamp = (on: boolean) => onChange({ breath: { pattern: { ...pattern, rampFromRpm: 6, rampSec: on ? 120 : 0 } } })
   const setCue = (k: keyof BreathCues, v: boolean) => onChange({ breath: { cues: { ...cues, [k]: v } } })
 
   const safety = breath.safetyLimits
@@ -275,8 +276,10 @@ export function BreathPanel({ presets, breath, timerMin, clock, onChange, onPres
           <label className="check">
             <input type="checkbox" checked={ramp} onChange={(e) => setRamp(e.target.checked)} />
             <span>
-              Rampa de entrada
-              <small>Empieza a 8 rpm y baja hasta el ritmo elegido en 2 minutos, para no forzar el cambio.</small>
+              Aproximación gradual al ritmo elegido
+              <small>
+                Empieza en 6 rpm y llega al ritmo elegido en 2 minutos. Desactivada, el ritmo suena desde el primer ciclo.
+              </small>
             </span>
           </label>
         </>

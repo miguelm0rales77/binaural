@@ -1,14 +1,14 @@
 import type { BreathPattern } from './dsp/breath'
 import type { NoiseType } from './dsp/types'
 
-/** Respiración de resonancia (§B2): 6 rpm, inspiración 4 s y espiración 6 s, con rampa de 8 a 6 rpm en 2 min. */
+/** Respiración de resonancia: 6 rpm, inspiración 4 s y espiración 6 s, sin aproximación gradual por defecto. */
 export const RESONANCE_PATTERN: BreathPattern = {
   rpm: 6,
   inhaleRatio: 0.4,
   holdInSec: 0,
   holdOutSec: 0,
-  rampFromRpm: 8,
-  rampSec: 120,
+  rampFromRpm: 6,
+  rampSec: 0,
 }
 
 /** Pre-sueño (§B5): 5,5 rpm con inspiración corta (35 %), sin rampa. */
@@ -142,21 +142,23 @@ export function describeBreath(p: BreathPattern): string {
   if (p.holdInSec > 0) parts.push(`retención ${fmt(p.holdInSec)} s`)
   parts.push(`espiración ${fmt(exhale)} s`)
   if (p.holdOutSec > 0) parts.push(`retención ${fmt(p.holdOutSec)} s`)
-  if ((p.rampSec ?? 0) > 0) parts.push(`rampa desde ${fmt(p.rampFromRpm ?? 8)} rpm`)
+  if ((p.rampSec ?? 0) > 0) parts.push(`aproximación gradual desde ${fmt(p.rampFromRpm ?? 6)} rpm`)
   return parts.join(' · ')
 }
 
+/** Clave de un patrón (ritmo, proporción, retenciones y rampa), independiente del orden de sus campos. */
+export function patternKey(p: BreathPattern): string {
+  return [p.rpm, p.inhaleRatio, p.holdInSec, p.holdOutSec, p.rampSec ?? 0].map((v) => Number(v).toFixed(4)).join('|')
+}
+
 /**
- * Nombre del preset que corresponde a un patrón (para el registro de práctica). Compara ritmo, proporción y rampa;
- * si ninguno coincide, la sesión es «Personalizado».
+ * Nombre del preset que corresponde a un patrón (para el registro de práctica). Compara ritmo y proporción.
+ * Resonancia y Microdosis tienen el mismo patrón: en ese caso, la App usa el preset que eligió la persona
+ * (ver `patternKey`). Si ningún preset coincide, la sesión es «Personalizado».
  */
 export function presetLabel(p: BreathPattern, presets: readonly BreathPreset[]): string {
-  const ramp = (x: BreathPattern) => (x.rampSec ?? 0) > 0
   const hit = presets.find(
-    (b) =>
-      Math.abs(b.pattern.rpm - p.rpm) < 1e-6 &&
-      Math.abs(b.pattern.inhaleRatio - p.inhaleRatio) < 1e-6 &&
-      ramp(b.pattern) === ramp(p),
+    (b) => Math.abs(b.pattern.rpm - p.rpm) < 1e-6 && Math.abs(b.pattern.inhaleRatio - p.inhaleRatio) < 1e-6,
   )
   return hit?.name ?? 'Personalizado'
 }

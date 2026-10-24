@@ -16,7 +16,7 @@ export interface BreathPattern {
   inhaleRatio: number
   holdInSec: number
   holdOutSec: number
-  /** Frecuencia de inicio de la rampa (por defecto 8 rpm). */
+  /** Ritmo del que parte la aproximación gradual (por defecto 6 rpm). */
   rampFromRpm?: number
   /** Duración de la rampa hasta `rpm` (por defecto 0 = sin rampa; el preset por defecto usa 120 s). */
   rampSec?: number
@@ -34,14 +34,18 @@ export interface BreathState {
   cycleIndex: number
 }
 
-/** Patrón por defecto (§B2): 6 rpm, inspiración 4 s y espiración 6 s, sin retenciones, con rampa de 8 a 6 rpm en 2 min. */
+/**
+ * Patrón por defecto: 6 rpm, inspiración 4 s y espiración 6 s, sin retenciones y sin aproximación gradual.
+ * El plan (§B2) la pedía de 8 a 6 rpm en 2 min; se quitó por defecto porque hacía que el ritmo elegido
+ * sonara más rápido al principio (ver DECISIONES.md). Se puede activar en la sección «Respirar».
+ */
 export const DEFAULT_BREATH_PATTERN: BreathPattern = {
   rpm: 6,
   inhaleRatio: 0.4,
   holdInSec: 0,
   holdOutSec: 0,
-  rampFromRpm: 8,
-  rampSec: 120,
+  rampFromRpm: 6,
+  rampSec: 0,
 }
 
 const PHASE_INDEX: Record<BreathPhase, number> = { in: 0, holdIn: 1, out: 2, holdOut: 3 }
@@ -54,7 +58,7 @@ function cyclesAt(t: number, p: BreathPattern): number {
   const r1 = p.rpm
   const R = p.rampSec ?? 0
   if (R <= 0) return (r1 * t) / 60
-  const r0 = p.rampFromRpm ?? 8
+  const r0 = p.rampFromRpm ?? 6
   if (t <= R) return (r0 * t + ((r1 - r0) * t * t) / (2 * R)) / 60
   return (((r0 + r1) * R) / 2 + r1 * (t - R)) / 60
 }
@@ -64,7 +68,7 @@ function cycleStart(n: number, p: BreathPattern): number {
   const r1 = p.rpm
   const R = p.rampSec ?? 0
   if (R <= 0) return (n * 60) / r1
-  const r0 = p.rampFromRpm ?? 8
+  const r0 = p.rampFromRpm ?? 6
   const cyclesAtRampEnd = ((r0 + r1) * R) / 120
   if (n > cyclesAtRampEnd) return R + ((n - cyclesAtRampEnd) * 60) / r1
   // cyclesAt(t) = b·t + a·t² dentro de la rampa; se resuelve con la forma estable 2n / (b + √(b² + 4an)).
@@ -147,7 +151,7 @@ export function sanitizeBreathPattern(patch: unknown): BreathPattern {
     inhaleRatio: clampNum(p.inhaleRatio, 0.4, 0.2, 0.8),
     holdInSec: clampNum(p.holdInSec, 0, 0, 60),
     holdOutSec: clampNum(p.holdOutSec, 0, 0, 60),
-    rampFromRpm: clampNum(p.rampFromRpm, 8, 3, 12),
+    rampFromRpm: clampNum(p.rampFromRpm, 6, 3, 12),
     rampSec: clampNum(p.rampSec, 0, 0, 600),
   }
 }
