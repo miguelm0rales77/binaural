@@ -130,3 +130,109 @@ export const ABOUT = {
     },
   ],
 } as const
+
+/**
+ * Meditación bilateral (uso personal de prueba, no clínico). Ningún texto promete efectos, ni alivio ni
+ * relajación garantizada: el test de «Textos» de tests/bilateral-texts.test.ts lo vigila.
+ */
+export const BILATERAL_TEXT = {
+  title: 'Meditación bilateral',
+  banner: 'Uso personal de prueba. No sustituye a un tratamiento. Si el malestar es intenso, para la sesión y busca apoyo.',
+  intro:
+    'Una sesión guiada con un sonido que se mueve de un oído a otro. La idea es observar cómo se siente y cómo cambia tu atención al escucharlo. No hay ningún resultado que esperar.',
+  headphones: 'Usa auriculares. Sin ellos no se percibe el paneo entre oídos.',
+  stereoMissing:
+    'Tu salida de audio no admite estéreo. Conecta auriculares o unos altavoces estéreo para usar esta sección.',
+  headphonesUnknown: 'La aplicación no puede comprobar si los auriculares están conectados; solo si la salida admite estéreo.',
+  limits: 'La sesión dura como máximo 30 minutos. Puedes pararla en cualquier momento con «Salir».',
+  defaults: 'Velocidades, duraciones y volúmenes por defecto neutros: ajustables y no validados.',
+  speed: {
+    label: 'Velocidad del paneo',
+    hint: 'Ciclos por segundo (Hz). Un ciclo es ir de un lado al otro y volver.',
+  },
+  modes: {
+    pulses: '(a) Paneo alternante de pulsos discretos',
+    continuous: '(b) Paneo continuo sobre tono sostenido',
+    none: '(c) Sin paneo, solo fondo',
+  },
+  modeLabel: 'Modo de estimulación',
+  blindOn:
+    'Modo ciego: la app elige el modo al azar al empezar y no lo muestra hasta el registro, al final de la sesión.',
+  blindOff: 'Modo visible: eliges tú el modo.',
+  blindHidden: 'Modo oculto hasta el final de la sesión.',
+  bgBinaural: 'Fondo binaural: dos tonos fijos, uno en cada oído. No se pasean.',
+  bgBeat: 'Diferencia entre los dos tonos (Hz)',
+  bedLabel: 'Cama de la pausa «Calma»',
+  bedNames: { rain: 'Lluvia (síntesis)', pink: 'Ruido rosa filtrado', drone: 'Dron neutro' },
+  haptics: 'Vibración al cambiar de lado (si el dispositivo la admite)',
+  hapticsUnavailable: 'Este navegador no permite vibrar (por ejemplo, iOS Safari). La opción está desactivada.',
+  start: 'Empezar la calibración',
+  calibration: {
+    title: 'Calibración',
+    intro:
+      'Antes de empezar, comprueba que cada tono suena en el oído indicado. Sube el volumen hasta que lo oigas bien, sin molestarte.',
+    left: 'Ahora suena un tono solo en el oído izquierdo. ¿Lo oyes solo en el izquierdo?',
+    right: 'Ahora suena un tono solo en el oído derecho. ¿Lo oyes solo en el derecho?',
+    yes: 'Sí, lo oigo',
+    no: 'No lo oigo bien',
+    retry: 'Repetir la calibración',
+    stuck:
+      'Si no lo oyes en el oído correcto, revisa los auriculares (canales invertidos o cable) y repite. No se empieza sin calibrar.',
+  },
+  meditation: {
+    title: 'Meditación',
+    calma: 'Calma',
+    exit: 'Salir',
+    discomfort: 'Malestar (0 = ninguno, 10 = el máximo)',
+    remaining: 'Quedan',
+    limit: 'Límite de 30 min',
+  },
+  guide: [
+    { text: 'Siéntate con la espalda cómoda. Deja que el sonido suene de fondo, sin buscar nada en especial.', sec: 40 },
+    { text: 'Nota cómo respiras, sin cambiarlo.', sec: 60 },
+    { text: 'Pausa. Solo escucha.', sec: 40 },
+    { text: 'Lleva la atención al cuerpo: los apoyos, el peso, la temperatura. Lo que aparezca, déjalo estar.', sec: 60 },
+    { text: 'Pausa.', sec: 40 },
+    { text: 'Escucha el sonido: dónde está, cuánto se mueve, cómo cambia. Cuando te distraigas, vuelve a él sin juzgarte.', sec: 90 },
+    { text: 'Si algo te incomoda, sube la marca de malestar o pulsa «Calma». No hay que aguantar nada.', sec: 40 },
+  ],
+  pause: {
+    title: 'Calma',
+    text: 'El paneo se atenúa poco a poco hasta casi quedarse quieto, y entra una cama continua sin alternancia. Sigue el círculo y respira a tu ritmo.',
+    resume: 'Volver a la meditación',
+    resumeBlocked: 'Hay un malestar de 8 o más marcado. Para volver a la meditación, baja primero la marca por debajo de 8.',
+    alert:
+      'Has marcado un malestar de 8 o más. La alternancia se ha detenido. Quédate en Calma con la respiración o sal de la sesión. Si el malestar persiste, busca apoyo de una persona de confianza o de un profesional.',
+  },
+  closing: {
+    title: 'Cierre',
+    steps: [
+      'Vuelve a la respiración: nota cómo entra y sale el aire, sin cambiarlo.',
+      'Nota el cuerpo: los puntos de apoyo, el peso, la temperatura.',
+      'Mira a tu alrededor y reconoce dónde estás, aquí y ahora.',
+    ],
+    button: 'Continuar',
+  },
+  endReasons: {
+    usuario: 'Terminaste la sesión cuando quisiste.',
+    duracion: 'Se alcanzó la duración que elegiste.',
+    limite: 'Se alcanzó el límite de 30 minutos.',
+  },
+  record: {
+    title: 'Registro (opcional)',
+    intro: 'Si quieres, anota cómo ha sido. Todo se guarda solo en este dispositivo.',
+    scales: { calma: 'Calma', atencion: 'Atención', activacion: 'Activación', malestar: 'Malestar' },
+    scaleHint: '0 = mínimo, 10 = máximo. Déjalo vacío si no quieres marcarlo.',
+    note: 'Nota libre',
+    modeTitle: 'Modo de esta sesión',
+    modeHidden: 'El modo estaba oculto durante la sesión.',
+    save: 'Guardar',
+    skip: 'No guardar',
+    done: 'Listo. Puedes empezar otra sesión cuando quieras.',
+  },
+  data: {
+    delete: 'Borrar todos los datos de esta sección',
+    confirm: '¿Borrar la configuración y el registro de la meditación bilateral de este dispositivo? No se puede deshacer.',
+    deleted: 'Datos de la meditación bilateral borrados de este dispositivo.',
+  },
+} as const
