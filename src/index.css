@@ -1150,3 +1150,124 @@ progress::-moz-progress-bar {
 .visual-controls label {
   color: var(--csb-crema);
 }
+
+/* Meditación bilateral (uso personal de prueba). Mismos tokens de marca; sin degradados ni destellos. */
+.bilateral-entry {
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  display: grid;
+  gap: 0.75rem;
+}
+.bilateral-entry h2 {
+  margin: 0;
+}
+.bilateral {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  color: var(--text);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.bilateral-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+.bilateral-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.bilateral-head h2 {
+  margin: 0;
+}
+.bilateral-head .eyebrow {
+  margin: 0;
+}
+.bilateral-banner {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--csb-oro);
+  background: var(--surface-tenue);
+  color: var(--text-2);
+  font-size: 0.95rem;
+}
+.bilateral-section {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--border);
+}
+.bilateral-section h3 {
+  margin: 0;
+}
+.bilateral-fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+.bilateral-fieldset legend {
+  padding: 0 0.35rem;
+  color: var(--text-2);
+}
+.bilateral-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.bilateral-ear p,
+.bilateral-guide {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+.bilateral-closing {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.bilateral-circle-wrap {
+  width: min(60vw, 220px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+}
+.bilateral-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--viz-fill);
+  border: 2px solid var(--viz-line);
+  transform: scale(0.6);
+  will-change: transform;
+}
+.bilateral-data {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+.bilateral-count {
+  margin: 0;
+}
+.bilateral-mode-revealed {
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bilateral-circle {
+    will-change: auto;
+  }
+}

@@ -160,6 +160,16 @@ describe('transiciones: cierre y registro', () => {
   })
 })
 
+describe('abortar', () => {
+  it('si el audio no arranca, vuelve a preparación sin pasar por el registro', () => {
+    const s = begin(INITIAL_SESSION)
+    const back = reduce(s, { type: 'abort' })
+    expect(back.phase).toBe('preparacion')
+    expect(back.endReason).toBeNull()
+    expect(reduce(INITIAL_SESSION, { type: 'abort' })).toBe(INITIAL_SESSION)
+  })
+})
+
 describe('modo ciego', () => {
   it('con el modo ciego activo, el modo no se muestra en ninguna fase de la sesión', () => {
     const modes: BilateralMode[] = ['pulses', 'continuous', 'none']

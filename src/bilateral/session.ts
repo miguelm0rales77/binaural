@@ -62,6 +62,8 @@ export type SessionEvent =
   | { type: 'tick'; elapsedSec: number }
   | { type: 'continue' }
   | { type: 'finish' }
+  /** El audio no pudo arrancar: vuelve a la preparación sin registrar nada. */
+  | { type: 'abort' }
 
 const ACTIVE: readonly Phase[] = ['calibracion', 'meditacion', 'pausa']
 
@@ -132,6 +134,9 @@ export function reduce(s: SessionState, e: SessionEvent): SessionState {
       return { ...s, phase: 'registro' }
     case 'finish':
       if (s.phase !== 'registro') return s
+      return { ...INITIAL_SESSION, elapsedSec: s.elapsedSec }
+    case 'abort':
+      if (s.phase === 'preparacion' || s.phase === 'registro') return s
       return { ...INITIAL_SESSION, elapsedSec: s.elapsedSec }
   }
 }
