@@ -24,6 +24,7 @@ import {
 import { BAND_NOTE, ISO_FAST_WARNING } from './texts'
 import { About } from './ui/About'
 import { BackgroundPanel } from './ui/BackgroundPanel'
+import { BilateralMode, BilateralSection } from './ui/BilateralMode'
 import { BreathPanel, type BreathSummary } from './ui/BreathPanel'
 import { PracticePanel } from './ui/PracticePanel'
 import { VisualMode } from './ui/VisualMode'
@@ -102,6 +103,7 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
   const [showViz, setShowViz] = useState(false) // opt-in en cada visita: más seguro con personas fotosensibles
   const [summary, setSummary] = useState<BreathSummary | null>(null)
   const [visual, setVisual] = useState<VisualPreset | null>(null)
+  const [bilateral, setBilateral] = useState(false)
   // Último preset de respiración aplicado: su nombre sirve para el registro mientras el patrón no cambie.
   const breathLabel = useRef<{ key: string; name: string } | null>(null)
   // Patrón de la sesión en curso si la respiración estaba activa al empezar, y último tiempo informado por el motor.
@@ -270,6 +272,16 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
     if (status !== 'playing') return
     setStatus('stopping')
     controller.current?.stop()
+  }
+
+  /** Abre la meditación bilateral: antes se para cualquier otro sonido de la aplicación. */
+  const openBilateral = () => {
+    if (status === 'playing') {
+      setStatus('stopping')
+      controller.current?.stop()
+    }
+    bg.current?.stop()
+    setBilateral(true)
   }
 
   const startBackground = () => {
@@ -568,6 +580,10 @@ function Player({ accepted, isoSeen, onDismissIso }: PlayerProps) {
       />
 
       <PracticePanel entries={practice} goalMin={goal} today={localDate()} onGoalChange={setGoal} />
+
+      <BilateralSection onOpen={openBilateral} />
+
+      {bilateral && <BilateralMode onClose={() => setBilateral(false)} />}
 
       {visual && (
         <VisualMode

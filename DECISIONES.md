@@ -300,3 +300,71 @@ Revisión del código y de la app completa antes de dar el proyecto por terminad
 - **Vista fractal sin audio:** la vista solo respiraba con audio sonando y la respiración guiada activa, así que sin audio el dibujo quedaba parado. Ahora respira con su propio reloj (`performance.now()`, medido desde que se abre o desde el último cambio de ritmo) cuando no suena audio. Con audio, sigue usando el reloj del motor. El preset «Respiración (sin audio)» respira siempre.
 - **Vista fractal, cambio de preset:** todos los presets usaban la misma semilla (7), así que la forma del fractal era la misma y solo cambiaban color y deformación. Ahora cada preset tiene su semilla (Relajación 19, Concentración 37, Meditación 127, Pre-sueño 71, Gamma 89, Respiración 101). Dimensiones medidas: 1,48 · 1,40 · 1,53 · 1,46 · 1,47 · 1,43, todas en 1,25–1,55. Meditación (semilla 53) daba 1,545 y se cambió por margen. Al cambiar de preset, la imagen se oscurece 1 s, cambia de forma y vuelve a iluminarse 1 s.
 - **Nombre del preset en el registro:** Resonancia y Microdosis tienen ahora el mismo patrón, así que la app guarda el nombre del preset elegido (`patternKey`) mientras el patrón no cambie. Si el patrón cambia a mano, se usa el emparejamiento por ritmo y proporción (y sale «Personalizado» si no hay coincidencia).
+
+## Meditación bilateral (uso personal de prueba, no clínico)
+
+Sección nueva, fuera del plan original. Pedida por el usuario como herramienta personal para observar cómo se
+siente y cómo cambia la atención al escuchar un paneo alternante. No es un protocolo clínico ni de trauma; no hay
+fases de EMDR, exposición ni reprocesamiento. Todos los textos son prudentes y no prometen efectos (vigilado en
+`tests/bilateral-texts.test.ts`).
+
+**Buses y ley de paneo**
+- Primer plano: tono (o pulsos) con paneo. Ley de potencia constante: `θ = (p+1)·π/4`, `L = cos θ`, `R = sen θ`
+  (`src/dsp/bilateral.ts`, `panGainsInto`). Cumple `L² + R² = 1` en todo el recorrido (test).
+- Fondo: binaural estático opcional (izquierdo = portadora, derecho = portadora + batido) y cama de «Calma»
+  (lluvia sintetizada, ruido rosa filtrado o dron). El fondo **no** pasa por el paneo: se suma después.
+- LFO: `p = profundidad · sen(2π·f·t)`. El tono empieza en la fase que corresponde, sin saltos (acumulador de fase).
+- Modo (a), pulsos discretos: 2·f pulsos por segundo, alternando izquierda y derecha, con ocupación del 50 % de cada
+  periodo. Modo (b), continuo: tono sostenido con paneo sinusoidal. Modo (c): literal «sin paneo, solo fondo»
+  (el tono se silencia; ver revisión abajo).
+
+**Velocidad.** `f` en Hz (ciclos por segundo). Ciclos/min = 60·f. Barridos/min = 2 × ciclos/min (un barrido es
+ir de un lado al otro). Por defecto 0,5 Hz (30 ciclos/min, 60 barridos/min). Rango 0,1–2 Hz. **Ajustable, no validado.**
+
+**Modo ciego.** Al empezar, la app elige el modo al azar (uniforme sobre los tres) y no lo muestra en ninguna fase
+de la sesión. Se revela solo en el registro, al terminar (`visibleMode`, tests de transiciones y modo ciego).
+El modo queda guardado en cada registro, también con el modo ciego, para poder comparar después.
+
+**Máquina de estados** (`src/bilateral/session.ts`, función pura):
+preparación → calibración → meditación ⇄ pausa («Calma») → cierre → registro → preparación.
+- Calibración: tono de 330 Hz solo en el oído izquierdo y después solo en el derecho. Hay que confirmar los dos;
+  si no se oye bien, se repite. No se empieza sin calibrar.
+- «Calma»: la profundidad y la velocidad se acercan a 0,15 y 0,25 con una constante de 7 s (a los 25–30 s el paneo
+  está casi quieto). Entra la cama (3 s) y se pasa a la pantalla de respiración guiada (ritmo de `RESONANCE_PATTERN`).
+  Volver: el paneo recupera su amplitud en unos 3 s.
+- «Salir»: fundido de salida de 2,5 s y paso inmediato a cierre con el anclaje (respiración, cuerpo, presente).
+- Límite duro de 30 min, contado desde el inicio de la calibración. La duración planeada es de 15 min por defecto
+  (5–30, ajustable). Al llegar a cualquiera de los dos, la sesión pasa a cierre.
+
+**Malestar (0–10).** Se marca en cualquier momento de la meditación o de la pausa. Con 8 o más:
+- **Decisión tomada (revisar):** el spec decía a la vez «la sesión se detiene y muestra el cierre» y «la app propone
+  Calma y ofrece Salir». Lo resuelvo así: la alternancia se corta en 0,3 s, la sesión pasa a «Calma», aparece el
+  aviso con «Salir» como opción visible, y **no se reanuda** hasta que la persona baje la marca por debajo de 8.
+  Si quiere parar, pulsa «Salir». Ni se reanuda sola ni se cierra sin que lo pida.
+
+**Registro.** Cuatro escalas de 0–10 (calma, atención, activación, malestar), nota libre (500 caracteres) y el modo.
+Todo opcional. Se guarda solo en `localStorage` (`binaural:bilateral-log:v1`); no hay red ni telemetría.
+
+**Persistencia y borrado.** Configuración en `binaural:bilateral-config:v1`, registro en `binaural:bilateral-log:v1`.
+«Borrar todos los datos de esta sección» elimina toda clave que empiece por `binaural:bilateral` (test sobre un
+almacenamiento falso: no toca las demás claves de la app). Tras borrar, la configuración no se vuelve a escribir.
+
+**Háptica.** `navigator.vibrate(20)` al cambiar de lado (pulso o cruce por el centro), opcional y apagada por
+defecto. Sin soporte (iOS Safari), el control queda desactivado con texto explicativo y no lanza errores.
+
+**Estéreo y auriculares.** La API web no permite saber si hay auriculares. La app comprueba si la salida admite dos
+canales (`destination.maxChannelCount >= 2`) al empezar y muestra un aviso si no. El aviso «usa auriculares» es
+permanente en la preparación.
+
+**Límites conocidos.**
+- Sin pantalla bloqueada: esta sección no usa el truco de segundo plano del reproductor (`BackgroundPlayer`). En
+  iOS, al bloquear el móvil el sonido puede cortarse. Pendiente de verificar.
+- No se usa la Web Speech API ni ningún análisis de voz. No se envía nada a ningún servidor.
+- La comprobación de estéreo se hace al empezar la sesión, no antes.
+
+**Revisión pendiente (decisiones que conviene confirmar):**
+1. Modo (c): literal «solo fondo», sin tono centrado de control.
+2. Malestar ≥ 8: el comportamiento descrito arriba (corte rápido, sin reanudar sola, «Salir» visible).
+3. Velocidades y duraciones por defecto (0,5 Hz, 15 min, cama de lluvia): neutras y no validadas.
+4. Frecuencias del fondo binaural (portadora 200 Hz, batido 6 Hz por defecto): no validadas.
+5. Los sonidos son sintetizados y suenan artificiales: el juicio sonoro es del usuario.

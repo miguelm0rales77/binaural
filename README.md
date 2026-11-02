@@ -78,6 +78,22 @@ scripts/     make-icons.py: genera los iconos de la PWA (requiere Pillow)
 
 Las decisiones de diseño y los desvíos respecto al plan están en [`DECISIONES.md`](DECISIONES.md).
 
+## Meditación bilateral (uso personal de prueba)
+
+Sección nueva para observar cómo se siente y cómo cambia la atención al escuchar un paneo alternante. No es un
+tratamiento ni un protocolo clínico. Se abre desde la página principal con «Abrir la meditación bilateral».
+
+- Paneo con ley de potencia constante, controlado por un LFO. La velocidad se muestra en Hz, ciclos/min y barridos/min.
+- Tres modos de comparación: (a) pulsos discretos, (b) paneo continuo, (c) solo fondo. Con el **modo ciego**
+  activo, la app elige el modo al azar y lo muestra solo en el registro, al final.
+- Calibración por oído antes de cada sesión. «Calma» atenúa el paneo; «Salir» hace un fundido de 2,5 s.
+  Con un malestar de 8 o más, la sesión pasa a «Calma» y no se reanuda sin una acción explícita.
+- Límite de 30 min. Registro opcional de cuatro escalas y una nota, solo en este dispositivo.
+- Requiere auriculares. Los valores por defecto son neutros, ajustables y no validados.
+- Borrado total: «Borrar todos los datos de esta sección» elimina la configuración y el registro de esta sección.
+
+Detalles y decisiones pendientes de revisión: `DECISIONES.md`, sección «Meditación bilateral».
+
 ## Despliegue
 
 Es un sitio estático: sirve cualquier hosting. **Necesita HTTPS** (o `localhost`) para el AudioWorklet, el
