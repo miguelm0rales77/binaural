@@ -315,8 +315,9 @@ fases de EMDR, exposición ni reprocesamiento. Todos los textos son prudentes y 
   (lluvia sintetizada, ruido rosa filtrado o dron). El fondo **no** pasa por el paneo: se suma después.
 - LFO: `p = profundidad · sen(2π·f·t)`. El tono empieza en la fase que corresponde, sin saltos (acumulador de fase).
 - Modo (a), pulsos discretos: 2·f pulsos por segundo, alternando izquierda y derecha, con ocupación del 50 % de cada
-  periodo. Modo (b), continuo: tono sostenido con paneo sinusoidal. Modo (c): literal «sin paneo, solo fondo»
-  (el tono se silencia; ver revisión abajo).
+  periodo. Modo (b), continuo: tono sostenido con paneo sinusoidal. Modo (c): sin paneo y sin tono; suena la
+  cama durante toda la sesión. Antes la cama solo entraba en «Calma» y el modo (c) quedaba en silencio con la
+  configuración por defecto (el usuario lo notó: «no oigo nada»). Tests en `tests/bilateral-dsp.test.ts`.
 
 **Velocidad.** `f` en Hz (ciclos por segundo). Ciclos/min = 60·f. Barridos/min = 2 × ciclos/min (un barrido es
 ir de un lado al otro). Por defecto 0,5 Hz (30 ciclos/min, 60 barridos/min). Rango 0,1–2 Hz. **Ajustable, no validado.**
@@ -363,7 +364,7 @@ permanente en la preparación.
 - La comprobación de estéreo se hace al empezar la sesión, no antes.
 
 **Revisión pendiente (decisiones que conviene confirmar):**
-1. Modo (c): literal «solo fondo», sin tono centrado de control.
+1. Modo (c): sin tono centrado de control; la cama suena durante toda la sesión (decidido por el usuario, opción 1).
 2. Malestar ≥ 8: el comportamiento descrito arriba (corte rápido, sin reanudar sola, «Salir» visible).
 3. Velocidades y duraciones por defecto (0,5 Hz, 15 min, cama de lluvia): neutras y no validadas.
 4. Frecuencias del fondo binaural (portadora 200 Hz, batido 6 Hz por defecto): no validadas.

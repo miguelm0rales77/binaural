@@ -187,6 +187,7 @@ export class BilateralEngine {
   private samples = 0
   private outL = 0
   private outR = 0
+  private calm = false
 
   constructor(fs: number, params: Partial<BilateralParams> = {}, rand: () => number = mulberry32(1)) {
     this.fs = fs
@@ -199,6 +200,7 @@ export class BilateralEngine {
     this.rainLowA = lpCoef(RAIN_LOW_HZ, fs)
     this.rainHighA = lpCoef(RAIN_HIGH_HZ, fs)
     this.fadeStep = 1 / (FADE_IN_SEC * fs)
+    this.applyBedTarget()
   }
 
   get params(): BilateralParams {
@@ -207,6 +209,7 @@ export class BilateralEngine {
 
   setParams(patch: Partial<BilateralParams>): void {
     this.p = sanitizeBilateral({ ...this.p, ...patch })
+    this.applyBedTarget()
   }
 
   /**
@@ -220,8 +223,18 @@ export class BilateralEngine {
     this.speed.setTau(tau, this.fs)
     this.depth.target = calm ? CALM_DEPTH : 1
     this.speed.target = calm ? CALM_SPEED : 1
-    this.bedLevel.setTau(calm ? BED_TAU_IN_SEC : BED_TAU_OUT_SEC, this.fs)
-    this.bedLevel.target = calm ? 1 : 0
+    this.calm = calm
+    this.applyBedTarget()
+  }
+
+  /**
+   * La cama suena en «Calma» y, en el modo sin paneo (c), durante toda la sesión: ese modo no tiene tono, así que
+   * sin cama quedaría en silencio. En los modos de paneo la cama solo entra en «Calma».
+   */
+  private applyBedTarget(): void {
+    const on = this.calm || this.p.mode === 'none'
+    this.bedLevel.setTau(on ? BED_TAU_IN_SEC : BED_TAU_OUT_SEC, this.fs)
+    this.bedLevel.target = on ? 1 : 0
   }
 
   start(): void {

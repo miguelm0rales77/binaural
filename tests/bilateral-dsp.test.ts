@@ -181,8 +181,8 @@ describe('motor: fondo binaural y cama', () => {
     expect(ratio).toBeLessThan(1.1)
   })
 
-  it('la cama suena solo en «Calma» y no alterna el paneo', () => {
-    const e = engine({ mode: 'none', bed: 'rain', bedGain: 0.25 })
+  it('en los modos de paneo la cama suena solo en «Calma»', () => {
+    const e = engine({ mode: 'continuous', toneGain: 0, bed: 'rain', bedGain: 0.25 })
     const quiet = run(e, 1)
     expect(mean(quiet.L)).toBe(0)
     e.setAlternation(true)
@@ -191,6 +191,23 @@ describe('motor: fondo binaural y cama', () => {
     expect(mean(calm.L)).toBeGreaterThan(1e-4)
     expect(mean(calm.R)).toBeGreaterThan(1e-4)
     expect(e.getState().bedLevel).toBeGreaterThan(0.9)
+  })
+
+  it('en el modo sin paneo (c) la cama suena durante la meditación, sin pasar por «Calma»', () => {
+    const e = engine({ mode: 'none', bed: 'rain', bedGain: 0.25 })
+    e.setAlternation(false)
+    const med = run(e, 10)
+    expect(mean(med.L, 8 * FS, 10 * FS)).toBeGreaterThan(1e-4)
+    expect(mean(med.R, 8 * FS, 10 * FS)).toBeGreaterThan(1e-4)
+    expect(e.getState().bedLevel).toBeGreaterThan(0.9)
+  })
+
+  it('con la configuración por defecto, el modo sin paneo no queda en silencio durante la meditación', () => {
+    const e = engine({ ...BILATERAL_DEFAULTS, mode: 'none', test: null })
+    e.setAlternation(false)
+    const { L, R } = run(e, 6)
+    expect(mean(L, 4 * FS, 6 * FS)).toBeGreaterThan(1e-4)
+    expect(mean(R, 4 * FS, 6 * FS)).toBeGreaterThan(1e-4)
   })
 })
 
