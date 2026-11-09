@@ -162,7 +162,7 @@ export const BILATERAL_TEXT = {
   blindHidden: 'Modo oculto hasta el final de la sesión.',
   bgBinaural: 'Fondo binaural: dos tonos fijos, uno en cada oído. No se pasean.',
   bgBeat: 'Diferencia entre los dos tonos (Hz)',
-  bedLabel: 'Cama de la pausa «Calma»',
+  bedLabel: 'Cama: suena en «Calma» y, en el modo (c), durante toda la sesión',
   bedNames: { rain: 'Lluvia (síntesis)', pink: 'Ruido rosa filtrado', drone: 'Dron neutro' },
   haptics: 'Vibración al cambiar de lado (si el dispositivo la admite)',
   hapticsUnavailable: 'Este navegador no permite vibrar (por ejemplo, iOS Safari). La opción está desactivada.',
